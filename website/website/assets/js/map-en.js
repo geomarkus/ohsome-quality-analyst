@@ -222,6 +222,7 @@ function buildMap(...charts){
 			  "dataset": String(selectedDataset),
 			  "featureId": String(areas),
 			  "includeSvg": true
+			  "returnHTML": false
 			}
 			console.log(params)
 			httpPostAsync(JSON.stringify(params), handleGetQuality);

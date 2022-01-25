@@ -186,6 +186,22 @@ class TestApiIndicator(unittest.TestCase):
             content = response.json()
             self.assertEqual(content["type"], "RequestValidationError")
 
+    @oqt_vcr.use_cassette()
+    def test_indicator_return_as_html(self):
+        parameters = {
+            "name": self.indicator_name,
+            "layerName": self.layer_name,
+            "dataset": self.dataset,
+            "featureId": self.feature_id,
+            "return_HTML": True,
+        }
+        for response in (
+            self.client.get(ENDPOINT + "?" + urlencode(parameters)),
+            self.client.post(ENDPOINT, json=parameters),
+        ):
+            content = response.json()
+            self.assertIsInstance(content, str)
+
 
 if __name__ == "__main__":
     unittest.main()
