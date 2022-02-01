@@ -155,6 +155,8 @@ async def create_indicator(
         indicator.calculate()
         logging.info("Run figure creation")
         indicator.create_figure()
+        logging.info("Run html creation")
+        indicator.create_html()
 
     async def from_database(dataset, feature_id) -> bool:
         """Create indicator by loading existing results from database"""

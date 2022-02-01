@@ -1,9 +1,11 @@
 import logging
+import os
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
 from statistics import mean
 from typing import Dict, List, Literal, NamedTuple, Optional, Tuple
 
+import jinja2
 from dacite import from_dict
 from geojson import Feature
 
@@ -28,6 +30,7 @@ class Result:
     label: Literal["green", "yellow", "red", "undefined"]
     value: float
     description: str
+    html: str
 
 
 class IndicatorLayer(NamedTuple):
@@ -57,7 +60,7 @@ class BaseReport(metaclass=ABCMeta):
         metadata = get_metadata("reports", type(self).__name__)
         self.metadata: Metadata = from_dict(data_class=Metadata, data=metadata)
         # Results will be written during the lifecycle of the report object (combine())
-        self.result = Result(None, None, None)
+        self.result = Result(None, None, None, None)
 
     def as_feature(self) -> Feature:
         """Returns a GeoJSON Feature object.
@@ -96,9 +99,22 @@ class BaseReport(metaclass=ABCMeta):
         logging.info(f"Combine indicators for report: {self.metadata.name}")
 
         values = []
+        html = ""
         for indicator in self.indicators:
             if indicator.result.label != "undefined":
                 values.append(indicator.result.value)
+            if indicator.result.html is not None:
+                html += indicator.result.html + "\\n"
+                del indicator.result.html
+        template_folder = r".\templates"
+        template_filename = "report_schema.html"
+        script_path = os.path.dirname(os.path.abspath(__file__))
+        template_path = os.path.join(script_path, template_folder)
+        env = jinja2.Environment(
+            loader=jinja2.FileSystemLoader(template_path),
+        )
+        template = env.get_template(template_filename)
+        self.result.html = template.render(indicators=html)
 
         if not values:
             self.result.value = None

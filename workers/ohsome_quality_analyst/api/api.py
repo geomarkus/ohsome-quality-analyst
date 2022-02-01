@@ -1,9 +1,7 @@
 import fnmatch
 import logging
-import os
 from typing import Union
 
-import jinja2
 from fastapi import Depends, FastAPI, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
@@ -159,53 +157,10 @@ async def _fetch_indicator(parameters) -> dict:
         fid_field,
         size_restriction=True,
     )
-    if p["return_HTML"] is True:
-        template_folder = r".\templates"
-        template_filename = "indicator_schema.html"
-        script_path = os.path.dirname(os.path.abspath(__file__))
-        template_path = os.path.join(script_path, template_folder)
-        env = jinja2.Environment(
-            loader=jinja2.FileSystemLoader(template_path),
-        )
-        template = env.get_template(template_filename)
-        if geojson_object["properties"]["result.label"] == "UNDEFINED":
-            traffic_light = (
-                "<span class='dot'></span>\n<span class='dot'>"
-                "</span>\n<span class='dot'></span>\n Undefined Quality"
-            )
-            svg = "<p>Plot can't be calculated for this indicator.</p>"
-        elif geojson_object["properties"]["result.label"] == "red":
-            traffic_light = (
-                "<span class='dot'></span>\n<span class='dot'>"
-                "</span>\n<span class='dot-red'></span>\n Bad Quality"
-            )
-            svg = geojson_object["properties"]["result.svg"]
-        elif geojson_object["properties"]["result.label"] == "yellow":
-            traffic_light = (
-                "<span class='dot'></span>\n<span class='dot-yellow'>"
-                "</span>\n<span class='dot'></span>\n Medium Quality"
-            )
-            svg = geojson_object["properties"]["result.svg"]
-        elif geojson_object["properties"]["result.label"] == "green":
-            traffic_light = (
-                "<span class='dot-green'></span>\n<span class='dot'>"
-                "</span>\n<span class='dot'></span>\n Good Quality"
-            )
-            svg = geojson_object["properties"]["result.svg"]
-
-        output_text = template.render(
-            indicator_name=geojson_object["properties"]["metadata.name"],
-            layer_name=geojson_object["properties"]["layer.name"],
-            svg=svg,
-            result_description=geojson_object["properties"]["result.description"],
-            indicator_description=geojson_object["properties"]["metadata.description"],
-            traffic_light=traffic_light,
-        )
-
-        return output_text
-
     if p["include_svg"] is False:
         remove_svg_from_properties(geojson_object)
+    if p["include_html"] is False:
+        remove_html_from_properties(geojson_object)
     response = empty_api_response()
     response.update(geojson_object)
     return JSONResponse(
@@ -254,6 +209,10 @@ async def _fetch_report(parameters: dict):
         size_restriction=True,
     )
     response = empty_api_response()
+    if p["include_html"] is True:
+        pass
+    else:
+        del geojson_object["properties"]["report.result.html"]
     if p["include_svg"] is False:
         remove_svg_from_properties(geojson_object)
     response.update(geojson_object)
@@ -342,3 +301,18 @@ def remove_svg_from_properties(
     elif isinstance(geojson_object, FeatureCollection):
         for feature in geojson_object["features"]:
             _remove_svg_from_properties(feature["properties"])
+
+
+def remove_html_from_properties(
+    geojson_object: Union[Feature, FeatureCollection]
+) -> None:
+    def _remove_html_from_properties(properties: dict) -> None:
+        for key in list(properties.keys()):
+            if fnmatch.fnmatch(key, "*result.html"):
+                del properties[key]
+
+    if isinstance(geojson_object, Feature):
+        _remove_html_from_properties(geojson_object["properties"])
+    elif isinstance(geojson_object, FeatureCollection):
+        for feature in geojson_object["features"]:
+            _remove_html_from_properties(feature["properties"])

@@ -3,12 +3,14 @@ TODO:
     Describe this module and how to implement child classes
 """
 
+import os
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from io import StringIO
 from typing import Dict, Literal, Optional
 
+import jinja2
 import matplotlib.pyplot as plt
 from dacite import from_dict
 from geojson import Feature
@@ -50,6 +52,7 @@ class Result:
     value: Optional[float]
     description: str
     svg: str
+    html: str
 
 
 class BaseIndicator(metaclass=ABCMeta):
@@ -77,6 +80,7 @@ class BaseIndicator(metaclass=ABCMeta):
             value=None,
             description=self.metadata.label_description["undefined"],
             svg=self._get_default_figure(),
+            html=None,
         )
 
     def as_feature(self) -> Feature:
@@ -160,3 +164,46 @@ class BaseIndicator(metaclass=ABCMeta):
         plt.savefig(svg_string, format="svg")
         plt.close("all")
         return svg_string.getvalue()
+
+    def create_html(self):
+        template_folder = r".\templates"
+        template_filename = "indicator_schema.html"
+        script_path = os.path.dirname(os.path.abspath(__file__))
+        template_path = os.path.join(script_path, template_folder)
+        env = jinja2.Environment(
+            loader=jinja2.FileSystemLoader(template_path),
+        )
+        template = env.get_template(template_filename)
+        if self.result.label == "UNDEFINED":
+            traffic_light = (
+                "<span class='dot'></span>\n<span class='dot'>"
+                "</span>\n<span class='dot'></span>\n Undefined Quality"
+            )
+            svg = "<p>Plot can't be calculated for this indicator.</p>"
+        elif self.result.label == "red":
+            traffic_light = (
+                "<span class='dot'></span>\n<span class='dot'>"
+                "</span>\n<span class='dot-red'></span>\n Bad Quality"
+            )
+            svg = self.result.svg
+        elif self.result.label == "yellow":
+            traffic_light = (
+                "<span class='dot'></span>\n<span class='dot-yellow'>"
+                "</span>\n<span class='dot'></span>\n Medium Quality"
+            )
+            svg = self.result.svg
+        elif self.result.label == "green":
+            traffic_light = (
+                "<span class='dot-green'></span>\n<span class='dot'>"
+                "</span>\n<span class='dot'></span>\n Good Quality"
+            )
+            svg = self.result.svg
+
+        self.result.html = template.render(
+            indicator_name=self.metadata.name,
+            layer_name=self.layer.name,
+            svg=svg,
+            result_description=self.result.description,
+            indicator_description=self.metadata.description,
+            traffic_light=traffic_light,
+        )

@@ -193,7 +193,7 @@ class TestApiIndicator(unittest.TestCase):
             "layerName": self.layer_name,
             "dataset": self.dataset,
             "featureId": self.feature_id,
-            "return_HTML": True,
+            "include_html": "True",
         }
         for response in (
             self.client.get(ENDPOINT + "?" + urlencode(parameters)),

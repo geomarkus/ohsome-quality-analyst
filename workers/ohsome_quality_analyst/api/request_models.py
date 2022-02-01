@@ -37,7 +37,7 @@ class BaseIndicatorModel(pydantic.BaseModel):
         ..., title="Layer Name", example="building_count"
     )
     include_svg: bool = False
-    return_HTML: bool = False
+    include_html: bool = False
 
     @pydantic.root_validator
     @classmethod
@@ -63,7 +63,7 @@ class BaseIndicatorModel(pydantic.BaseModel):
 class BaseReportModel(pydantic.BaseModel):
     name: ReportEnum = pydantic.Field(..., title="Report Name", example="SimpleReport")
     include_svg: bool = False
-    return_HTML: bool = False
+    include_html: bool = False
 
     class Config:
         """Pydantic config class."""
