@@ -209,9 +209,7 @@ async def _fetch_report(parameters: dict):
         size_restriction=True,
     )
     response = empty_api_response()
-    if p["include_html"] is True:
-        pass
-    else:
+    if p["include_html"] is False:
         del geojson_object["properties"]["report.result.html"]
     if p["include_svg"] is False:
         remove_svg_from_properties(geojson_object)

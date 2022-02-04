@@ -166,14 +166,15 @@ class BaseIndicator(metaclass=ABCMeta):
         return svg_string.getvalue()
 
     def create_html(self):
-        template_folder = r".\templates"
-        template_filename = "indicator_schema.html"
-        script_path = os.path.dirname(os.path.abspath(__file__))
-        template_path = os.path.join(script_path, template_folder)
+        template_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "templates",
+            "indicator_schema.html",
+        )
         env = jinja2.Environment(
             loader=jinja2.FileSystemLoader(template_path),
         )
-        template = env.get_template(template_filename)
+        template = env.get_template("indicator_schema.html")
         if self.result.label == "UNDEFINED":
             traffic_light = (
                 "<span class='dot'></span>\n<span class='dot'>"
