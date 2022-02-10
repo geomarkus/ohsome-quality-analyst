@@ -188,19 +188,20 @@ class TestApiIndicator(unittest.TestCase):
 
     @oqt_vcr.use_cassette()
     def test_indicator_return_as_html(self):
-        parameters = {
-            "name": self.indicator_name,
-            "layerName": self.layer_name,
-            "dataset": self.dataset,
-            "featureId": self.feature_id,
-            "include_html": "True",
-        }
-        for response in (
-            self.client.get(ENDPOINT + "?" + urlencode(parameters)),
-            self.client.post(ENDPOINT, json=parameters),
-        ):
-            content = response.json()
-            self.assertIsInstance(content, str)
+        url = (
+            "/indicator?name={0}&layerName={1}&dataset={2}"
+            "&featureId={3}&fidField={4}&includeHtml={5}".format(
+                self.indicator_name,
+                self.layer_name,
+                self.dataset,
+                self.feature_id,
+                self.fid_field,
+                True,
+            )
+        )
+        response = self.client.get(url)
+        result = response.json()
+        self.assertIn("result.svg", list(result["properties"].keys()))
 
 
 if __name__ == "__main__":

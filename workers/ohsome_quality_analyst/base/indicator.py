@@ -166,37 +166,53 @@ class BaseIndicator(metaclass=ABCMeta):
         return svg_string.getvalue()
 
     def create_html(self):
-        template_path = os.path.join(
+        template_dir = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             "templates",
-            "indicator_schema.html",
         )
         env = jinja2.Environment(
-            loader=jinja2.FileSystemLoader(template_path),
+            loader=jinja2.FileSystemLoader(template_dir),
         )
-        template = env.get_template("indicator_schema.html")
-        if self.result.label == "UNDEFINED":
-            traffic_light = (
-                "<span class='dot'></span>\n<span class='dot'>"
-                "</span>\n<span class='dot'></span>\n Undefined Quality"
+        template = env.get_template("indicator_template.html")
+        dot_css = (
+            "style='height: 25px; width: 25px; background-color: {0};"
+            "border-radius: 50%; display: inline-block;'"
+        )
+        svg = "<p>Plot can't be calculated for this indicator.</p>"
+        traffic_light = (
+            "<span {0} class='dot'></span>\n<span {1} class='dot'>"
+            "</span>\n<span {2} class='dot'></span>\n Undefined Quality".format(
+                dot_css.format("#bbb"), dot_css.format("#bbb"), dot_css.format("#bbb")
             )
-            svg = "<p>Plot can't be calculated for this indicator.</p>"
-        elif self.result.label == "red":
+        )
+        if self.result.label == "red":
             traffic_light = (
-                "<span class='dot'></span>\n<span class='dot'>"
-                "</span>\n<span class='dot-red'></span>\n Bad Quality"
+                "<span {0} class='dot'></span>\n<span {1} class='dot'>"
+                "</span>\n<span {2} class='dot-red'></span>\n Bad Quality".format(
+                    dot_css.format("#FF0000"),
+                    dot_css.format("#bbb"),
+                    dot_css.format("#bbb"),
+                )
             )
             svg = self.result.svg
         elif self.result.label == "yellow":
             traffic_light = (
-                "<span class='dot'></span>\n<span class='dot-yellow'>"
-                "</span>\n<span class='dot'></span>\n Medium Quality"
+                "<span {0} class='dot'></span>\n<span {1} class='dot-yellow'>"
+                "</span>\n<span {2} class='dot'></span>\n Medium Quality".format(
+                    dot_css.format("#bbb"),
+                    dot_css.format("#FFFF00"),
+                    dot_css.format("#bbb"),
+                )
             )
             svg = self.result.svg
         elif self.result.label == "green":
             traffic_light = (
-                "<span class='dot-green'></span>\n<span class='dot'>"
-                "</span>\n<span class='dot'></span>\n Good Quality"
+                "<span {0} class='dot-green'></span>\n<span {1} class='dot'>"
+                "</span>\n<span {2} class='dot'></span>\n Good Quality".format(
+                    dot_css.format("#008000"),
+                    dot_css.format("#bbb"),
+                    dot_css.format("#bbb"),
+                )
             )
             svg = self.result.svg
 

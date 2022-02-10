@@ -1,8 +1,50 @@
-<div class="section-container section-flex">
+<div class="section-container section-flex" style="display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-pack: justify;
+        -ms-flex-pack: justify;
+            justify-content: space-between;
+    @media screen and (max-width: 679px) {
+      .section .section-flex {
+        -ms-flex-wrap: wrap;
+            flex-wrap: wrap; } }
+    .section .section-flex.image-left .two-thirds {
+      margin-left: 40px; }
+      @media screen and (max-width: 679px) {
+        .section .section-flex.image-left .two-thirds {
+          margin-left: 0; } }
+    @media screen and (max-width: 679px) {
+      .section .section-flex.image-left .one-third {
+        display: none; } }
+    .section .section-flex.image-right .two-thirds {
+      margin-right: 40px; }
+      @media screen and (max-width: 679px) {
+        .section .section-flex.image-right .two-thirds {
+          margin-right: 0; } }
+    .section .section-flex.image-right .one-third {
+      text-align: right; }
+      @media screen and (max-width: 679px) {
+        .section .section-flex.image-right .one-third {
+          display: none; }
+          .section .section-flex.image-right .one-third.keep-image {
+            display: block;
+            -webkit-box-flex: 1;
+                -ms-flex: 1 1 100%;
+                    flex: 1 1 100%;
+            text-align: center; }
+            .section .section-flex.image-right .one-third.keep-image img {
+              max-width: 180px;
+              margin-top: 20px; } }
+      .section .section-flex.image-right .one-third img {
+        margin: 0 auto; }
+    ">
   <div class="one-third indicator-graph">
     {{svg}}
   </div>
-  <div class="two-thirds">
+  <div class="two-thirds" style="{
+  -webkit-box-flex: 1;
+      -ms-flex: 1 1 66.6667%;
+          flex: 1 1 66.6667%; }">
     <h4>{{indicator_name}} for {{layer_name}}</h4>
     <p>
       <p>
@@ -12,11 +54,16 @@
     <p>
         {{result_description}}
     </p>
-    <p class="metadata-text">
+    <p class="metadata-text" style="color: #666666;">
       Indicator description:
       <br>
       {{indicator_description}}
     </p>
   </div>
-  <hr class="splitline">
+  <hr class="splitline" style="  display: block;
+  height: 1px;
+  border: 0;
+  border-top: 1px solid #e0e0e0;
+  max-width: 980px;
+  margin: 10px auto;">
 </div>

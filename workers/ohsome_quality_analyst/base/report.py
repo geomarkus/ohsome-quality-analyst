@@ -106,13 +106,12 @@ class BaseReport(metaclass=ABCMeta):
             if indicator.result.html is not None:
                 html += indicator.result.html + "\\n"
                 del indicator.result.html
-        template_path = os.path.join(
+        template_dir = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             "templates",
-            "report_template.html",
         )
         env = jinja2.Environment(
-            loader=jinja2.FileSystemLoader(template_path),
+            loader=jinja2.FileSystemLoader(template_dir),
         )
         template = env.get_template("report_template.html")
         self.result.html = template.render(indicators=html)

@@ -129,6 +129,39 @@ class TestApiReportIo(unittest.TestCase):
         result = response.json()
         self.assertNotIn("indicators.0.result.svg", list(result["properties"].keys()))
 
+    @oqt_vcr.use_cassette()
+    def test_report_include_html(self):
+        feature = get_geojson_fixture("heidelberg-altstadt-feature.geojson")
+        parameters = {
+            "name": self.report_name,
+            "bpolys": feature,
+            "includeSvg": False,
+            "includeHtml": True,
+        }
+        response = self.client.post(self.endpoint, json=parameters)
+        result = response.json()
+        self.assertIn("report.result.html", list(result["properties"].keys()))
+        """
+        parameters = {
+            "name": self.report_name,
+            "bpolys": feature,
+            "includeSvg": False,
+            "includeHtml": False,
+        }
+        response = self.client.post(self.endpoint, json=parameters)
+        result = response.json()
+        self.assertNotIn("report.result.html", list(result["properties"].keys()))
+
+        parameters = {
+            "name": self.report_name,
+            "bpolys": feature,
+        }
+        response = self.client.post(self.endpoint, json=parameters)
+        result = response.json()
+        self.assertNotIn("report.result.html", list(result["properties"].keys()))
+
+"""
+
 
 if __name__ == "__main__":
     unittest.main()
