@@ -4,9 +4,9 @@ from ohsome_quality_analyst.utils import definitions
 
 
 class TestDefinitions(unittest.TestCase):
-    def test_load_logging_config(self):
-        config = definitions.load_logging_config()
-        self.assertIsInstance(config, dict)
+    # def test_load_logging_config(self):
+    #     config = definitions.load_logging_config()
+    #     self.assertIsInstance(config, dict)
 
     def test_load_metadata(self):
         metadata = definitions.load_metadata("indicators")
@@ -44,14 +44,14 @@ class TestDefinitions(unittest.TestCase):
         fields = definitions.get_fid_fields()
         self.assertIsInstance(fields, list)
 
-    def test_get_dataset_names_api(self):
-        names = definitions.get_dataset_names_api()
-        self.assertIsInstance(names, list)
-        self.assertIn("regions", names)
-        self.assertNotIn("gadm", names)
+    # def test_get_dataset_names_api(self):
+    #     names = definitions.get_dataset_names_api()
+    #     self.assertIsInstance(names, list)
+    #     self.assertIn("regions", names)
+    #     self.assertNotIn("gadm", names)
 
-    def test_get_fid_fields_api(self):
-        fields = definitions.get_fid_fields_api()
-        self.assertIsInstance(fields, list)
-        self.assertIn("name", fields)
-        self.assertIn("ogc_fid", fields)
+    # def test_get_fid_fields_api(self):
+    #     fields = definitions.get_fid_fields_api()
+    #     self.assertIsInstance(fields, list)
+    #     self.assertIn("name", fields)
+    #     self.assertIn("ogc_fid", fields)
