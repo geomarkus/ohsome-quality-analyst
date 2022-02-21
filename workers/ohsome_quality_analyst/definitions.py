@@ -1,35 +1,20 @@
-"""
-Global Variables and Functions.
-"""
+"""Global Variables and Functions."""
 
 import glob
 import logging
-import logging.config
 import os
-import sys
 from typing import Dict, List
 
-import rpy2.rinterface_lib.callbacks
 import yaml
 
-from ohsome_quality_analyst import __version__ as oqt_version
+from ohsome_quality_analyst.config.config import get_config
 from ohsome_quality_analyst.utils.helper import flatten_sequence, get_module_dir
 
-# Dataset names and fid fields which are available in the Geodatabase
-DATASETS = {
-    "regions": {"default": "ogc_fid", "other": ("name",)},
-    "gadm": {
-        "default": "uid",  # ISO 3166-1 alpha-3 country code
-        "other": (
-            *tuple(("name_{0}".format(i) for i in range(6))),
-            *tuple(("id_{0}".format(i) for i in range(6))),
-            *tuple(("gid_{0}".format(i) for i in range(6))),
-        ),
-    },
-}
-# Dataset names and fid fields which are through the API
-DATASETS_API = DATASETS.copy()
-DATASETS_API.pop("gadm")
+CONFIG = get_config()
+DATASETS = CONFIG["datasets"]
+OHSOME_API = CONFIG["ohsome_api"]
+GEOM_SIZE_LIMIT = CONFIG["geom_size_limit"]
+USER_AGENT = CONFIG["user_agent"]
 
 # Possible indicator layer combinations
 INDICATOR_LAYER = (
@@ -79,49 +64,6 @@ INDICATOR_LAYER = (
     ("TagsRatio", "jrc_bridge_count"),
     ("TagsRatio", "jrc_mass_gathering_sites_count"),
 )
-OHSOME_API = os.getenv("OHSOME_API", default="https://api.ohsome.org/v1/")
-# Input geometry size limit in sqkm for API requests
-# TODO: decide on default value
-GEOM_SIZE_LIMIT = os.getenv("OQT_GEOM_SIZE_LIMIT", default=100)
-
-USER_AGENT = os.getenv(
-    "OQT_USER_AGENT", default="ohsome-quality-analyst/{}".format(oqt_version)
-)
-
-
-def get_log_level():
-    if "pydevd" in sys.modules or "pdb" in sys.modules:
-        default_level = "DEBUG"
-    else:
-        default_level = "INFO"
-    return os.getenv("OQT_LOG_LEVEL", default=default_level)
-
-
-def load_logging_config():
-    """Read logging config from configuration file"""
-    level = get_log_level()
-    logging_path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "logging.yaml"
-    )
-    with open(logging_path, "r") as f:
-        logging_config = yaml.safe_load(f)
-    logging_config["root"]["level"] = getattr(logging, level.upper())
-    return logging_config
-
-
-def configure_logging() -> None:
-    """Configure logging level and format"""
-
-    class RPY2LoggingFilter(logging.Filter):  # Sensitive
-        def filter(self, record):
-            return " library ‘/usr/share/R/library’ contains no packages" in record.msg
-
-    # Avoid R library contains no packages WARNING logs.
-    # OQT has no dependencies on additional R libraries.
-    rpy2.rinterface_lib.callbacks.logger.addFilter(RPY2LoggingFilter())
-    # Avoid a huge amount of DEBUG logs from matplotlib font_manager.py
-    logging.getLogger("matplotlib.font_manager").setLevel(logging.INFO)
-    logging.config.dictConfig(load_logging_config())
 
 
 def load_metadata(module_name: str) -> Dict:
@@ -242,9 +184,8 @@ def get_fid_fields() -> List[str]:
     return flatten_sequence(DATASETS)
 
 
-def get_dataset_names_api() -> List[str]:
-    return list(DATASETS_API.keys())
+# def get_dataset_names_api() -> List[str]:
+#     return list(DATASETS_API.keys())
 
-
-def get_fid_fields_api() -> List[str]:
-    return flatten_sequence(DATASETS_API)
+# def get_fid_fields_api() -> List[str]:
+#     return flatten_sequence(DATASETS_API)
