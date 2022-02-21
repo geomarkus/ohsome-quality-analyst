@@ -24,17 +24,17 @@ import asyncpg
 import geojson
 from geojson import Feature, FeatureCollection, MultiPolygon, Polygon
 
-from ohsome_quality_analyst.utils.definitions import DATASETS
+from ohsome_quality_analyst.utils.definitions import CONFIG, DATASETS
 from ohsome_quality_analyst.utils.helper import json_serialize
 
 
 @asynccontextmanager
 async def get_connection():
-    host = os.getenv("POSTGRES_HOST", default="localhost")
-    port = os.getenv("POSTGRES_PORT", default=5445)
-    database = os.getenv("POSTGRES_DB", default="oqt")
-    user = os.getenv("POSTGRES_USER", default="oqt")
-    password = os.getenv("POSTGRES_PASSWORD", default="oqt")
+    host = CONFIG["database"]["host"]
+    port = CONFIG["database"]["port"]
+    database = CONFIG["database"]["database"]
+    user = CONFIG["database"]["user"]
+    password = CONFIG["database"]["password"]
     # DNS in libpq connection URI format
     dns = f"postgres://{user}:{password}@{host}:{port}/{database}"
     conn = await asyncpg.connect(dns)
