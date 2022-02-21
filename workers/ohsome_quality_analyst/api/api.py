@@ -28,12 +28,12 @@ from ohsome_quality_analyst.api.request_models import (
     ReportBpolys,
     ReportDatabase,
 )
+from ohsome_quality_analyst.config.config import configure_logging
 from ohsome_quality_analyst.geodatabase import client as db_client
 from ohsome_quality_analyst.utils.definitions import (
     INDICATOR_LAYER,
-    configure_logging,
-    get_dataset_names_api,
-    get_fid_fields_api,
+    get_dataset_names,
+    get_fid_fields,
     get_indicator_names,
     get_layer_names,
     get_report_names,
@@ -274,7 +274,7 @@ async def list_indicators():
 async def list_datasets():
     """List names of available datasets."""
     response = empty_api_response()
-    response["result"] = get_dataset_names_api()
+    response["result"] = get_dataset_names()
     return response
 
 
@@ -298,7 +298,7 @@ async def list_reports():
 async def list_fid_fields():
     """List available fid fields for each dataset."""
     response = empty_api_response()
-    response["result"] = get_fid_fields_api()
+    response["result"] = get_fid_fields()
     return response
 
 
