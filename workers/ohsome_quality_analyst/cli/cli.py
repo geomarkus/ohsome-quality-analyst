@@ -8,11 +8,11 @@ import yaml
 
 from ohsome_quality_analyst import oqt
 from ohsome_quality_analyst.cli import options
+from ohsome_quality_analyst.config.config import configure_logging
 from ohsome_quality_analyst.geodatabase import client as db_client
 from ohsome_quality_analyst.utils.definitions import (
     DATASETS,
     INDICATOR_LAYER,
-    configure_logging,
     load_layer_definitions,
     load_metadata,
 )
