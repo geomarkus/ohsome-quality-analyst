@@ -1,0 +1,13 @@
+---
+database:
+  host: localhost
+  port: 5445
+  database: oqt
+  user: oqt
+  password: oqt
+datasets: # Datasets available in the database (Name of relation with GEOM)
+  regions:
+    default: ogc_fid
+    other: [name] # Optional: Query by "name" not "ogc_fid"
+ohsome_api: https://api.ohsome.org/v1/
+geom_size_limit: 100 # Restrict size of input geometry to the OQT API (sqkm)
