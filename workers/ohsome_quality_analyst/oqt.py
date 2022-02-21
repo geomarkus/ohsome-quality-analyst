@@ -1,5 +1,5 @@
-"""
-Controller for the creation of Indicators and Reports.
+"""Controller for the creation of Indicators and Reports.
+
 Functions are triggert by the CLI and API.
 """
 import asyncio
