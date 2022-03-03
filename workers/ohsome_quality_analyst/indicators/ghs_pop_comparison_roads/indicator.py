@@ -9,6 +9,7 @@ from asyncpg import Record
 from geojson import Feature
 
 from ohsome_quality_analyst.base.indicator import BaseIndicator
+from ohsome_quality_analyst.base.layer import BaseLayer as Layer
 from ohsome_quality_analyst.geodatabase import client as db_client
 from ohsome_quality_analyst.ohsome import client as ohsome_client
 from ohsome_quality_analyst.utils.definitions import get_attribution
@@ -19,10 +20,10 @@ class GhsPopComparisonRoads(BaseIndicator):
 
     def __init__(
         self,
-        layer_name: str,
+        layer: Layer,
         feature: Feature,
     ) -> None:
-        super().__init__(layer_name=layer_name, feature=feature)
+        super().__init__(layer=layer, feature=feature)
         # Those attributes will be set during lifecycle of the object.
         self.pop_count = None
         self.area = None
