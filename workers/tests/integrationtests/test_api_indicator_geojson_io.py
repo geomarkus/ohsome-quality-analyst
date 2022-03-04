@@ -145,7 +145,6 @@ class TestApiIndicatorIo(unittest.TestCase):
         response = self.client.post(self.endpoint, json=parameters)
         result = response.json()
         self.assertIn("result.html", list(result["properties"].keys()))
-
         parameters = {
             "name": self.indicator_name,
             "layerName": self.layer_name,

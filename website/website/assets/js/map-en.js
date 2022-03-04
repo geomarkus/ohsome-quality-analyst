@@ -221,7 +221,7 @@ function buildMap(...charts){
 			  "name": String(selectedReport),
 			  "dataset": String(selectedDataset),
 			  "featureId": String(areas),
-			  "includeSvg": true
+			  "includeSvg": true,
 			  "includeHtml": false
 			}
 			console.log(params)

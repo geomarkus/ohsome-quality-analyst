@@ -182,7 +182,9 @@ class BaseIndicator(metaclass=ABCMeta):
         traffic_light = (
             "<span {0} class='dot'></span>\n<span {1} class='dot'>"
             "</span>\n<span {2} class='dot'></span>\n Undefined Quality".format(
-                dot_css.format("#bbb"), dot_css.format("#bbb"), dot_css.format("#bbb")
+                dot_css.format("#bbb"),
+                dot_css.format("#bbb"),
+                dot_css.format("#bbb"),
             )
         )
         if self.result.label == "red":
