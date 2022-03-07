@@ -3,7 +3,11 @@ import unittest
 from datetime import datetime
 
 from ohsome_quality_analyst.geodatabase import client as db_client
-from ohsome_quality_analyst.indicators.building_area.indicator import BuildingArea
+from ohsome_quality_analyst.indicators.building_area.indicator import (
+    BuildingArea,
+    get_ghs_pop_density,
+    get_smod_class_share,
+)
 
 from .utils import oqt_vcr
 
@@ -51,6 +55,14 @@ class TestIndicatorBuildingArea(unittest.TestCase):
 
         self.indicator.create_figure()
         self.assertIsNotNone(self.indicator.result.svg)
+
+    def test_get_ghs_pop_density(self):
+        result = asyncio.run(get_ghs_pop_density(self.feature))
+        self.assertEqual(result, 80.38435859331635)
+
+    def test_get_smod_class_share(self):
+        result = get_smod_class_share(self.feature)
+        self.assertDictEqual(result, {"urban_centre": 1.0})
 
 
 if __name__ == "__main__":
