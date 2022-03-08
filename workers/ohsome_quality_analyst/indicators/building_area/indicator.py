@@ -83,9 +83,13 @@ class BuildingArea(BaseIndicator):
                 **get_smod_class_share(self.feature),
                 "ghs_pop": get_ghs_pop_density(self.feature),
                 "vnl": raster_client.get_zonal_stats(
-                    self.feature, get_raster_dataset("VNL"), stats="sum"
+                    self.feature,
+                    get_raster_dataset("VNL"),
+                    stats="sum",
                 )[0].get("sum"),
-                "shdi": 0.5,  # TODO
+                # TODO: Waiting for PR 266
+                # "shdi": db_client.get_shdi(self.feature.geometry)
+                "shdi": 0.5,
             },
         )
 
