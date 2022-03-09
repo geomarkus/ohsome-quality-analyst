@@ -8,11 +8,13 @@ import numpy as np
 from dateutil.parser import isoparse
 from geojson import Feature
 from rpy2.rinterface_lib.embedded import RRuntimeError
+from schema import Or, Schema, SchemaError, Use
 
 from ohsome_quality_analyst.base.indicator import BaseIndicator
 from ohsome_quality_analyst.base.layer import BaseLayer as Layer
 from ohsome_quality_analyst.indicators.mapping_saturation import models
 from ohsome_quality_analyst.ohsome import client as ohsome_client
+from ohsome_quality_analyst.utils.exceptions import LayerDataSchemaError
 
 
 class MappingSaturation(BaseIndicator):
@@ -68,6 +70,7 @@ class MappingSaturation(BaseIndicator):
             self.feature.geometry,
             time=self.time_range,
         )
+        validate_query_results(query_results)
         for item in query_results["result"]:
             self.values.append(item["value"])
             self.timestamps.append(isoparse(item["timestamp"]))
@@ -221,3 +224,30 @@ class MappingSaturation(BaseIndicator):
                 fitted_models.remove(fm)
 
         return fitted_models
+
+
+def validate_query_results(result: dict) -> None:
+    """Validate query results.
+
+    Validation is needed if the input Layer to this Indicator has data attached to it.
+
+    Raises:
+        LayerDataSchemaError: Error based on SchemaError with additional description.
+    """
+    try:
+        Schema(
+            {
+                "result": [
+                    {
+                        "value": Or(float, int),
+                        "timestamp": Use(lambda t: isoparse(t)),
+                    }
+                ]
+            },
+            ignore_extra_keys=True,
+        ).validate(result)
+    except SchemaError as error:
+        raise LayerDataSchemaError(
+            "Invalid Layer data input to the Mapping Saturation Indicator.",
+            error,
+        )
