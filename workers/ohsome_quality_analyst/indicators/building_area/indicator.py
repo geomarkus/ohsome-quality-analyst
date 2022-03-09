@@ -1,9 +1,8 @@
 import os
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from string import Template
 
 import dateutil.parser
-import pandas as pd
 from dacite import from_dict
 
 # import matplotlib.pyplot as plt
@@ -17,20 +16,24 @@ from ohsome_quality_analyst.utils.definitions import get_raster_dataset
 from ohsome_quality_analyst.utils.helper import load_sklearn_model
 
 
-@dataclass
+@dataclass(frozen=True, order=True)
 class Covariates:
-    ghs_pop: float  # Pop density in sqkm
-    shdi: float  # Mean
-    vnl: float  # Sum
+    # GHSL GHS-POP
+    ghs_pop: float
+    ghs_pop_density: float  # [sqkm]
     # GHSL SMOD L2 nomenclature
-    urban_centre: float = 0.0
-    dense_urban_cluster: float = 0.0
-    semi_dense_urban_cluster: float = 0.0
-    suburban_or_peri_urban: float = 0.0
-    rural_cluster: float = 0.0
-    low_density_rural: float = 0.0
-    very_low_density_rural: float = 0.0
     water: float = 0.0
+    very_low_density_rural: float = 0.0
+    low_density_rural: float = 0.0
+    rural_cluster: float = 0.0
+    suburban_or_peri_urban: float = 0.0
+    semi_dense_urban_cluster: float = 0.0
+    dense_urban_cluster: float = 0.0
+    urban_centre: float = 0.0
+    # GDL SHDI
+    shdi: float = 0.0  # Mean
+    # EOG VNL
+    vnl: float = 0.0  # Sum
 
 
 class BuildingArea(BaseIndicator):
@@ -64,92 +67,91 @@ class BuildingArea(BaseIndicator):
         self.covariates: Covariates = None
         self.building_area_osm = None
         self.building_area_prediction = None
-        self.percentage_mapped = None
-        self.attrdict = None
 
     async def preprocess(self) -> None:
+        # Get OSM data
         query_results = await ohsome_client.query(
             layer=self.layer,
             bpolys=self.feature.geometry,
         )
-        self.building_area = query_results["results"][0]["value"]
+        self.building_area_osm = query_results["result"][0]["value"]
         self.result.timestamp_osm = dateutil.parser.isoparse(
             query_results["result"][0]["timestamp"]
         )
 
-        self.covariates = from_dict(
-            data_class=Covariates,
-            data={
-                **get_smod_class_share(self.feature),
-                "ghs_pop": get_ghs_pop_density(self.feature),
-                "vnl": raster_client.get_zonal_stats(
-                    self.feature,
-                    get_raster_dataset("VNL"),
-                    stats="sum",
-                )[0].get("sum"),
-                # TODO: Waiting for PR 266
-                # "shdi": db_client.get_shdi(self.feature.geometry)
-                "shdi": 0.5,
-            },
-        )
+        # Get covariates
+        vnl = raster_client.get_zonal_stats(
+            self.feature,
+            get_raster_dataset("VNL"),
+            stats="sum",
+        )[0]["sum"]
+        ghs_pop = raster_client.get_zonal_stats(
+            self.feature,
+            get_raster_dataset("GHS_POP_R2019A"),
+            stats="sum",
+        )[0]["sum"]
+        area = await db_client.get_area_of_bpolys(self.feature.geometry)
+        ghs_pop_density = ghs_pop / area
+        data = {
+            **get_smod_class_share(self.feature),
+            "ghs_pop_density": ghs_pop_density,
+            # TODO: Waiting for PR 266
+            "ghs_pop": ghs_pop,
+            "vnl": vnl,
+            # "shdi": db_client.get_shdi(self.feature.geometry)
+            "shdi": 0.5,
+        }
+        self.covariates = from_dict(data_class=Covariates, data=data)
 
     def calculate(self) -> None:
         directory = os.path.dirname(os.path.abspath(__file__))
-        scaler = load_sklearn_model(os.path.join(directory, "scaler.joblib"))
-        model = load_sklearn_model(os.path.join(directory, "model.joblib"))
 
-        # create a DataFrame from dict, as the regressor was trained with one
-        x = pd.DataFrame.from_dict([self.attrdict])
+        min_max_scaler = load_sklearn_model(os.path.join(directory, "scaler.joblib"))
+        random_forest_regressor = load_sklearn_model(
+            os.path.join(directory, "model.joblib")
+        )
 
-        # define which values in the df must be normalised
-        columns_to_normalize = [
-            "ghspop",
-            "ghspop_density_per_sqkm",
-            "vnl_sum",
-        ]
+        cov = asdict(self.covariates)
+        scaled = min_max_scaler.transform(
+            [[v for k, v in cov.items() if k in ("ghs_pop", "ghs_pop_density", "vnl")]]
+        )
+        cov["ghs_pop"] = scaled[0][0]
+        cov["ghs_pop_density"] = scaled[0][1]
+        cov["vnl"] = scaled[0][2]
 
-        # get the values to be normalized
-        values_unnormalized = x[columns_to_normalize].values  # returns a numpy array
-        # get normalized values
-        values_scaled = scaler.transform(values_unnormalized)
-        # insert normalized values in original df
-        x[columns_to_normalize] = values_scaled
-
-        # use model to predict building area
-        y = model.predict(x)
-        self.building_area_prediction = y[0]
-
-        # calculate percentage OSM reached compared to expected value
-        self.percentage_mapped = (
-            self.building_area_osm / self.building_area_prediction
-        ) * 100
+        self.building_area_prediction = random_forest_regressor.predict(
+            [list(cov.values())]
+        )[0]
+        # Percentage mapped
+        self.result.value = self.building_area_osm / self.building_area_prediction
 
         description = Template(self.metadata.result_description).substitute(
-            building_area=self.building_area,
-            predicted_building_area=self.predicted_building_area,
-            percentage_mapped=self.percentage_mapped,
+            building_area_osm=self.building_area_osm,
+            building_area_prediction=self.building_area_prediction,
+            percentage_mapped=self.result.value * 100,
         )
         # TODO: adjust percentage boundaries for green/yellow/red. Adjust in medata.yaml
         #       as well
-        if self.percentage_mapped >= 95.0:
+        if 0.95 <= self.result.value:
             self.result.label = "green"
-            self.result.value = 1.0
             self.result.description = (
                 description + self.metadata.label_description["green"]
             )
-        # growth is larger than 3% within last 3 years
-        elif 95.0 > self.percentage_mapped >= 75.0:
+        elif 0.75 <= self.result.value < 0.95:
             self.result.label = "yellow"
-            self.result.value = 0.5
             self.result.description = (
                 description + self.metadata.label_description["yellow"]
             )
-        # growth level is better than the red threshold
-        else:
+        elif 0.0 <= self.result.value < 0.75:
             self.result.label = "red"
-            self.result.value = 0.0
             self.result.description = (
                 description + self.metadata.label_description["red"]
+            )
+        else:
+            raise ValueError(
+                "Result value (percentage mapped) is an unexpected value: {}".format(
+                    self.result.value
+                )
             )
 
     def create_figure(self) -> None:
@@ -185,17 +187,6 @@ def get_smod_class_share(feature) -> dict:
         stats="count",
     )[0].get("count")
     return {k: v / pixel_count for k, v in class_count.items()}
-
-
-async def get_ghs_pop_density(feature) -> float:
-    """Get population density using GHSL GHS-POP."""
-    ghs_pop_sum = raster_client.get_zonal_stats(
-        feature,
-        get_raster_dataset("GHS_POP_R2019A"),
-        stats="sum",
-    )[0]["sum"]
-    area = await db_client.get_area_of_bpolys(feature.geometry)
-    return ghs_pop_sum / area
 
 
 # TOOO: define self.model_name (see TODO above)

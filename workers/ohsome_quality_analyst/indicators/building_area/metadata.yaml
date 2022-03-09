@@ -21,6 +21,6 @@ BuildingArea:
     undefined: |
       The quality level could not be calculated for this indicator.
   result_description: |
-    The building area mapped in OSM is $building_area sqkm and the expected building 
-    area for this feature is $predicted_building_area sqkm. Accordingly, the area mapped
+    The building area mapped in OSM is $building_area_osm sqkm and the expected building 
+    area for this feature is $building_area_prediction sqkm. Accordingly, the area mapped
     in OSM is $percentage_mapped of the expected area
