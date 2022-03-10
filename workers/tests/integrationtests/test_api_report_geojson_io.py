@@ -102,7 +102,7 @@ class TestApiReportIo(unittest.TestCase):
 
     @oqt_vcr.use_cassette()
     def test_report_include_svg(self):
-        feature = get_geojson_fixture("heidelberg-altstadt-feature.geojson")
+        feature = get_geojson_fixture("niger-kanan-bakache.geojson")
         parameters = {
             "name": self.report_name,
             "bpolys": feature,

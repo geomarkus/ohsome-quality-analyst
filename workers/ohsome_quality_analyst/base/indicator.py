@@ -178,7 +178,7 @@ class BaseIndicator(metaclass=ABCMeta):
             "style='height: 25px; width: 25px; background-color: {0};"
             "border-radius: 50%; display: inline-block;'"
         )
-        svg = "<p>Plot can't be calculated for this indicator.</p>"
+        svg = self.result.svg
         traffic_light = (
             "<span {0} class='dot'></span>\n<span {1} class='dot'>"
             "</span>\n<span {2} class='dot'></span>\n Undefined Quality".format(

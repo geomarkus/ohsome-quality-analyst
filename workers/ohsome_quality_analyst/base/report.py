@@ -1,19 +1,17 @@
 import logging
-import math
 import os
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
-from io import BytesIO, StringIO
-from itertools import product
+from io import StringIO
 from statistics import mean
 from typing import Dict, List, Literal, NamedTuple, Optional, Tuple
 
+import geojson
 import jinja2
-import requests
+import smopy
 from dacite import from_dict
 from geojson import Feature
 from matplotlib import pyplot as plt
-from PIL import Image
 
 from ohsome_quality_analyst.base.indicator import BaseIndicator
 from ohsome_quality_analyst.utils.definitions import get_metadata
@@ -182,12 +180,9 @@ class BaseReport(metaclass=ABCMeta):
             loader=jinja2.FileSystemLoader(template_dir),
         )
 
-        URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png".format
-
-        TILE_SIZE = 256
         x_list = []
         y_list = []
-        for coord in self.feature["geometry"]["coordinates"][0][0]:
+        for coord in list(geojson.utils.coords(self.feature)):
             x_list.append(coord[0])
             y_list.append(coord[1])
         x_min = min(x_list)
@@ -195,77 +190,25 @@ class BaseReport(metaclass=ABCMeta):
         y_min = min(y_list)
         y_max = max(y_list)
 
-        def point_to_pixels(lon, lat, zoom):
-            """convert gps coordinates to web mercator"""
-            r = math.pow(2, zoom) * TILE_SIZE
-            lat = math.radians(lat)
-
-            x = math.floor((lon + 180.0) / 360.0 * r)
-            y = math.ceil(
-                (1.0 - math.log(math.tan(lat) + (1.0 / math.cos(lat))) / math.pi)
-                / 2.0
-                * r
-            )
-
-            return x, y
-
-        zoom = 15
-
-        x_outer_0, y_outer_0 = point_to_pixels(x_min, y_min, zoom)
-        x_outer_1, y_outer_1 = point_to_pixels(x_max, y_max, zoom)
-
-        x0_tile, y0_tile = int(x_outer_0 / TILE_SIZE), int(y_outer_0 / TILE_SIZE)
-        x1_tile, y1_tile = math.ceil(x_outer_1 / TILE_SIZE), math.ceil(
-            y_outer_1 / TILE_SIZE
-        )
-
-        xmax_tile = max(x0_tile, x1_tile) + 1
-        xmin_tile = min(x0_tile, x1_tile) - 1
-        ymax_tile = max(y0_tile, y1_tile) + 1
-        ymin_tile = min(y0_tile, y1_tile) - 1
-
-        full_x = (xmax_tile - xmin_tile) * TILE_SIZE
-        full_y = (ymax_tile - ymin_tile) * TILE_SIZE
-        # full size image we'll add tiles to
-        img = Image.new("RGB", (full_x, full_y))
-
-        # loop through every tile inside our bounded box
-        for x_tile, y_tile in product(
-            range(xmin_tile, xmax_tile), range(ymin_tile, ymax_tile)
-        ):
-            with requests.get(URL(x=x_tile, y=y_tile, z=zoom)) as resp:
-                tile_img = Image.open(BytesIO(resp.content))
-
-            # add each tile to the full size image
-            img.paste(
-                im=tile_img,
-                box=(
-                    (x_tile - xmin_tile) * TILE_SIZE,
-                    (y_tile - ymin_tile) * TILE_SIZE,
-                ),
-            )
-
-        x, y = xmin_tile * TILE_SIZE, ymin_tile * TILE_SIZE
-        left = int(x_outer_0 - x)
-        top = int(y_outer_1 - y)
-        right = int(x_outer_1 - x)
-        bot = int(y_outer_0 - y)
-
-        img = img.crop((left, top, right, bot))
-
+        map = smopy.Map((y_min, x_min, y_max, x_max))
+        pixels = []
+        for x, y in zip(x_list, y_list):
+            x_pixel, y_pixel = map.to_pixels(y, x)
+            pixels.append([x_pixel, y_pixel])
         fig, ax = plt.subplots()
-        ax.imshow(img, extent=(x_min, x_max, y_min, y_max))
-        ax.add_patch(
-            plt.Polygon(
-                self.feature["geometry"]["coordinates"][0][0], alpha=0.4, color=color
-            )
-        )
+        ax = map.show_mpl(ax=ax, figsize=(8, 6))
+        ax.add_patch(plt.Polygon(pixels, alpha=0.4, color=color))
+        ax.axis("off")
+        px = 1 / plt.rcParams["figure.dpi"]  # Pixel in inches
+        figsize = (400 * px, 400 * px)
+        plt.figure(figsize=figsize)
         svg_string = StringIO()
-        plt.savefig(svg_string, format="svg")
+        fig.savefig(svg_string, format="svg", bbox_inches="tight", pad_inches=0)
         map = svg_string.getvalue()
 
         template = env.get_template("report_template.html")
         self.result.html = template.render(
+            report_name=self.metadata.name,
             indicators=html,
             result_description=self.result.description,
             metadata=self.metadata.description,
