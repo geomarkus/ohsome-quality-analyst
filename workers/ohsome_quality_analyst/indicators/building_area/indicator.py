@@ -18,6 +18,11 @@ from ohsome_quality_analyst.utils.helper import load_sklearn_model
 
 @dataclass(frozen=True, order=True)
 class Covariates:
+    """Covariates/Input Sample for the Random Forest Regressor.
+
+    The order is of the input sample is important.
+    """
+
     # GHSL GHS-POP
     ghs_pop: float
     ghs_pop_density: float  # [sqkm]
@@ -192,7 +197,6 @@ def get_smod_class_share(feature) -> dict:
 # TOOO: define self.model_name (see TODO above)
 # TODO: check, whether raster containing no value and therefore indicator should be
 #           undefined
-# TODO: implement shdi mean querry (see TODO above)
 # TODO: discuss & adjust percentage boundaries for green/yellow/red. Adjust values in
 #           metadata.yaml as well(see TODO above)
 # TODO: discuss: as the regressor is only trained with samples from africa, make it
