@@ -23,11 +23,7 @@ from ohsome_quality_analyst.utils.exceptions import OhsomeApiError
 
 
 @singledispatch
-async def query(
-    layer,
-    *args,
-    **kargs,
-) -> dict:
+async def query(layer) -> dict:
     raise NotImplementedError(
         "Cannot query ohsome API for Layer of type: " + str(type(layer))
     )
@@ -54,6 +50,7 @@ async def _query(
     return await query_ohsome_api(url, data)
 
 
+@query.register
 async def _query(layer: LayerData, *_args, **_kargs) -> dict:  # noqa
     return layer.data
 

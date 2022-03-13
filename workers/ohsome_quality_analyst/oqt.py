@@ -124,8 +124,7 @@ async def create_report_as_geojson(
 
 
 @singledispatch
-async def create_indicator(parameters, force: bool = False) -> Indicator:
-    """Create an Indicator."""
+async def create_indicator(parameters) -> Indicator:
     raise NotImplementedError(
         "Cannot create Indicator for parameters of type: " + str(type(parameters))
     )
@@ -187,10 +186,7 @@ async def _create_indicator(
 
 
 @create_indicator.register
-async def _create_indicator(  # noqa
-    parameters: IndicatorBpolys,
-    force: bool = False,
-) -> Indicator:
+async def _create_indicator(parameters: IndicatorBpolys, *_args) -> Indicator:  # noqa
     """Create an indicator from scratch."""
     name = parameters.name.value
     layer: Layer = from_dict(
@@ -217,10 +213,7 @@ async def _create_indicator(  # noqa
 
 
 @create_indicator.register
-async def _create_indicator(  # noqa
-    parameters: IndicatorData,
-    force: bool = False,
-) -> Indicator:
+async def _create_indicator(parameters: IndicatorData, *_args) -> Indicator:  # noqa
     """Create an indicator from scratch."""
     name = parameters.name.value
     layer = parameters.layer
@@ -244,7 +237,7 @@ async def _create_indicator(  # noqa
 
 
 @singledispatch
-async def create_report(parameters, force: bool = False) -> Report:
+async def create_report(parameters) -> Report:
     """Create a Report."""
     raise NotImplementedError(
         "Cannot create Report for parameters of type: " + str(type(parameters))
@@ -252,10 +245,7 @@ async def create_report(parameters, force: bool = False) -> Report:
 
 
 @create_report.register
-async def _create_report(
-    parameters: ReportDatabase,
-    force: bool = False,
-) -> Report:
+async def _create_report(parameters: ReportDatabase, force: bool = False) -> Report:
     """Create a Report.
 
     Fetches indicator results form the database.
@@ -297,10 +287,7 @@ async def _create_report(
 
 
 @create_report.register
-async def _create_report(  # noqa
-    parameters: ReportBpolys,
-    force: bool = False,
-) -> Report:
+async def _create_report(parameters: ReportBpolys, *_args) -> Report:  # noqa
     """Create a Report.
 
     Aggregates all indicator results and calculates an overall quality score.
