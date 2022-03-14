@@ -7,6 +7,12 @@
 - Update `poi` layer based on ([`openpoiservice`]) [#246])
 - Remove `ideal_vgi_poi` layer in favor of new `poi` layer ([#246])
 
+
+### New Features
+
+- Add new parameter `layer` containing `name`, `description` and `data` fields to the API endpoint `indicator`. This enables to compute indicators for given data. ([#245])
+
+
 ### Other Changes
 
 - Use ([`rasterstats`]) to provide access to third-party raster datasets stored on disk ([#227])
@@ -20,6 +26,7 @@
 [#221]: https://github.com/GIScience/ohsome-quality-analyst/pull/221
 [#227]: https://github.com/GIScience/ohsome-quality-analyst/pull/227
 [#239]: https://github.com/GIScience/ohsome-quality-analyst/pull/239
+[#245]: https://github.com/GIScience/ohsome-quality-analyst/pull/245
 [#246]: https://github.com/GIScience/ohsome-quality-analyst/pull/246
 [#254]: https://github.com/GIScience/ohsome-quality-analyst/pull/254
 [#266]: https://github.com/GIScience/ohsome-quality-analyst/pull/266
