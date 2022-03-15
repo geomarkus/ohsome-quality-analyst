@@ -13,15 +13,8 @@ from ohsome_quality_analyst.ohsome import client as ohsome_client
 
 
 class TagsRatio(BaseIndicator):
-    def __init__(
-        self,
-        layer: Layer,
-        feature: Feature,
-    ) -> None:
-        super().__init__(
-            layer=layer,
-            feature=feature,
-        )
+    def __init__(self, layer: Layer, feature: Feature) -> None:
+        super().__init__(layer=layer, feature=feature)
         self.threshold_yellow = 0.75
         self.threshold_red = 0.25
         self.ratio = None
@@ -29,7 +22,6 @@ class TagsRatio(BaseIndicator):
         self.count_match = None
 
     async def preprocess(self) -> None:
-
         query_results_count = await ohsome_client.query(
             self.layer,
             self.feature.geometry,
