@@ -25,8 +25,8 @@ major_roads_count:
     https://wiki.openstreetmap.org/wiki/Key:highway
   endpoint: elements/count
   filter: |
-      highway in (motorway, trunk, primary, secondary,
-      tertiary, unclassified, residential) and type:way
+    highway in (motorway, trunk, primary, secondary,
+    tertiary, unclassified, residential) and type:way
 
 major_roads_length:
   name: Major Roads
@@ -46,11 +46,68 @@ amenities:
   filter: amenity=* and (type:way or type:node)
 
 poi:
-  name: Points-of-Interests
-  description: |
-    A lot of different objects such related to natural features
-    transportation and amenities in a city.
+  name: Points of interest
+  description: All features with the amenities key.
   endpoint: elements/count
+  source: https://github.com/GIScience/openpoiservice/blob/master/openpoiservice/server/categories/categories.yml
+  filter: |
+    (aeroway in (aerodrome, helipad, heliport))
+    or (amenity in (animal_boarding, animal_shelter, arts_centre, atm, baby_hatch, bank, bar, bbq, bench,
+    bicycle_parking, bicycle_rental, bicycle_repair_station, biergarten, boat_sharing, brothel, bureau_de_change,
+    bus_station, bus_stop, cafe, car_sharing, car_wash, casino, charging_station, cinema, clinic, clock, college,
+    community_centre, compressed_air, courthouse, coworking_space, crematorium, crypt, dentist, doctors, dive_centre,
+    dojo, drinking_water, driving_school, embassy, emergency_phone, ev_charging, fast_food, ferry_terminal,
+    fire_station, food_court, fountain, fuel, gambling, grave_yard, hospital, hunting_stand, ice_cream, internet_cafe,
+    kindergarten, language_school, library, kneipp_water_cure, marketplace, motorcycle_parking, music_school, nightclub,
+    nursing_home, parking, parking_entrance, parking_space, pharmacy, photo_booth, planetarium, place_of_worship,
+    police, post_box, post_office, pub, public_bath, prison, ranger_station, recycling, rescue_station, restaurant,
+    retirement_home, sanitary_dump_station, school, shelter, shower, social_centre, social_facility, spa, stripclub,
+    studio, table, taxi, telephone, toilets, townhall, university, vending_machine, veterinary, waste_basket,
+    waste_disposal, water_point))
+    or (emergency in (access_point, defibrillator, fire_hydrant))
+    or (healthcare = blood_donation)
+    or (healthcare:speciality = vacciniation)
+    or (highway = raceway)
+    or (historic in (aircraft, aqueduct, archaeological_site, battlefield, boundary_stone, building,
+    castle, cannon, city_gate, citywalls, farm, fort, gallows, highwater_mark, locomotive, manor,
+    memorial, milestone, monastery, monument, optical_telegraph, pillory, ruins, rune_stone, ship,
+    tomb, wayside_cross, wayside_shrine, wreck))
+    or (leisure in (adult_gaming_centre, amusement_arcade, beach_resort, bandstand, bird_hide, common,
+    dance, dog_park, firepit, fishing, fitness_centre, garden, golf_course, hackerspace,
+    horse_riding, ice_rink, marina, miniature_golf, nature_reserve, park, picnic_table, pitch, playground,
+    sauna, slipway, sports_centre, stadium, summer_camp, swimming_area, swimming_pool, track, turkish_bad,
+    water_park, wildlife_hide))
+    or (natural in (beach, cave_entrance, geyser, peak, rock, saddle, spring, volcano,
+    water))
+    or (public_transport in (platform, stop_position, station, stop_area))
+    or (railway in (halt, station, tram_station))
+    or (shop in (agrarian, alcohol, antiques, art, bag, bakery, beauty, bed, beverages,
+    bicycle, books, boutique, brewing_supplies, business_machines, butcher, cafe,camera,
+    candles, car, car_parts, carpet, curtain, cheese, chemist, chocolate,
+    clothes, coffee, computer, confectionery, convenience, copyshop, cosmetics,
+    dairy, deli, department_store, doityourself, dry_cleaning, electrical, electronics,
+    erotic, estate_agent, e-cigarette, farm, fashion, fishing, florist, funeral_directors,
+    furniture, games, garden_centre, garden_furniture, gas, general, gift, glaziery, greengrocer, grocery,
+    hairdresser, hairdresser_supply, hardware, hearing_aids, herbalist, hifi, houseware, hunting, insurance,
+    interior_decoration, jewelry, laundry, leather, locksmith, kiosk, kitchen, lamps, lottery, mall,
+    massage, medical_supply, mobile_phone, model, motorcycle, music, musical_instrument,
+    nutrition_supplements, newsagent, optician, organic, outdoor, paint, pastry, perfumery, photo,
+    pyrotechnics, rediotechnics, seafood, second_hand,secruity, shoes, spices, sports, stationery,
+    supermarket, swimming_pool, tailor, tattoo, tea, ticket, tiles, tobacco, toys, travel_agency, trophy,
+    tyres, variety_store, video, video_games, watches, weapons, wine, pet))
+    or (tourism in (alpine_hut, apartment, aquarium, artwork, attraction, camp_site, caravan_site,
+    chalet, gallery, museum, guest_house, hostel, hotel, motel, picnic_site, theme_park, viewpoint,
+    wilderness_hut, zoo))
+    or (vaccination = covid19)
+
+landmarks:
+  name: landmarks for orientation
+  description: |
+    A lot of different objects related to natural features,
+    transportation and amenities in a city. Definition taken from
+    Waterproofing data project.
+  endpoint: elements/count
+  source: https://www.geog.uni-heidelberg.de/gis/sketchmaptool.html
   filter: |
     natural=peak or leisure=park or boundary=national_park or
     natural=water or waterway=* or highway=bus_stop or railway=station or
@@ -97,13 +154,13 @@ jrc_road_length:
 jrc_road_count:
   name: JRC Road Length
   description: |
-      Selection of OSM highways with maxspeed and oneway tag.
+    Selection of OSM highways with maxspeed and oneway tag.
   endpoint: elements/count
   filter: |
     highway in (motorway, primary, secondary, tertiary, trunk, unclassified, residential)
   ratio_filter: |
-      highway in (motorway, primary, secondary, tertiary, trunk, unclassified, residential)
-      and maxspeed=* and oneway=*
+    highway in (motorway, primary, secondary, tertiary, trunk, unclassified, residential)
+    and maxspeed=* and oneway=*
 
 jrc_railway_length:
   name: JRC Railways Length
@@ -243,15 +300,19 @@ ideal_vgi_infrastructure:
   endpoint: elements/length
   filter: (aerialway=* or aeroway=* or highway=* or power=* or railway=* or telecom=*) and geometry:line
 
-ideal_vgi_poi:
-  name: IDEAL-VGI Points-of-Interests
-  description: Features related to Points-of-Interests
-  endpoint: elements/count
-  filter: (amenity=* or craft=* or emergency=* or historic=* or leisure=* or man_made=* or office=* or place=* or shop=* or tourism=*) and geometry:point
-
-ideal_vgi_lulc:
-  name: IDEAL-VGI Land Use and Land Cover
-  description: Features related to land use and land cover
+lulc:
+  name: Land Use and Land Cover
+  description: |
+    Features related to land use and land cover.
+    This definition includes well established tags for coherent areas at the most atomic level available.
+    This definition therefore excludes areas with the keys aeroway, highway, leisure and tourism which can be found in other sources.
+    For further details please contact us.
   endpoint: elements/area
-  filter: (landuse=* or natural=* or waterway=*) and geometry:polygon
-
+  filter: |
+    (landuse=allotments or landuse=animal_keeping or landuse=basin or landuse=brownfield or landuse=cemetery or landuse=churchyard or landuse=civic_admin or landuse=commercial or landuse=construction or landuse=depot or landuse=education or landuse=farmland or landuse=farmyard or landuse=forest or landuse=garages or landuse=grass or landuse=greenfield or landuse=greenhouse_horticulture or landuse=harbour or landuse=industrial or landuse=landfill or landuse=logging or landuse=meadow or landuse=military or landuse=orchard or landuse=plant_nursery or landuse=port or landuse=quarry or landuse=railway or landuse=recreation_ground or landuse=religious or landuse=reservoir or landuse=residential or landuse=retail or landuse=salt_pond or landuse=village_green or landuse=vineyard or natural=bare_rock or natural=beach or natural=dune or natural=fell or natural=glacier or natural=grassland or natural=heath or natural=landslide or natural=mud or natural=rock or natural=sand or natural=scree or natural=scrub or natural=shingle or natural=water or natural=wetland or natural=wood or waterway=boatyard or waterway=dam or waterway=dock or waterway=riverbank) and geometry:polygon
+  source: |
+    https://osmlanduse.org;
+    Fonte et al 2016 https://cartography-gis.com/docsbca/iccgis2016/ICCGIS2016-47.pdf;
+    https://github.com/jasp382/glass/tree/master/core/glass/ete/osm2lulc;
+    Schultz et al 2017 https://doi.org/10.1016/j.jag.2017.07.014;
+    https://www.geog.uni-heidelberg.de/gis/ideal_en.html

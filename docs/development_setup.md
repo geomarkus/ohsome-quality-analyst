@@ -17,7 +17,7 @@ Please continue reading for more information on each one of those services. If r
 
 ## Database
 
-A database for development purposes is provided as Dockerfile. This database contains custom regions, regions for running tests and the GHS POP dataset for those regions. To build and run an already configured image run:
+A database for development purposes is provided as Dockerfile. This database contains custom regions, regions for running tests and datasets (SHDI and GHS-POP) for those regions. To build and run an already configured image run:
 
 ```bash
 docker-compose -f docker-compose.development.yml up -d oqt-database
@@ -49,13 +49,20 @@ docker-compose -f docker-compose.development.yml up -d
 A minimal database setup for running tests is provided. If the build argument `OQT_TEST_DB` is set to `True` a database is initialized with data only for the regions used by the tests. No (additional) data is downloaded as is the case with the database setup for development.
 
 
+## Raster Datasets
+
+Please refer to [/docs/raster_datasets.md](/docs/raster_datasets.md).
+
+
 ## OQT Python package
 
 
 ### Requirements
 
-- Python 3.8+
-- Poetry 1.1.0+
+- Python: ≥ 3.8 and < 3.10
+- Poetry: ≥ 1.1
+- R: ≥ 4.0
+- GDAL ≥ 3
 
 This project uses [Poetry](https://python-poetry.org/docs/) for packaging and dependencies management. Please make sure it is installed on your system.
 

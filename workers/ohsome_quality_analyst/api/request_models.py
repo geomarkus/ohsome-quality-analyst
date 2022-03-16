@@ -115,7 +115,7 @@ class BaseDatabase(BaseModel):
 
     dataset: DatasetEnum = pydantic.Field(..., title="Dataset Name", example="regions")
     feature_id: str = pydantic.Field(..., title="Feature Id", example="3")
-    fid_field: Optional[FidFieldEnum]
+    fid_field: Optional[FidFieldEnum] = None
 
 
 class IndicatorBpolys(BaseIndicator, BaseBpolys):
@@ -144,7 +144,7 @@ INDICATOR_EXAMPLES = {
         ),
         "value": {
             "name": "GhsPopComparisonBuildings",
-            "layer_name": "building_count",
+            "layerName": "building_count",
             "bpolys": {
                 "type": "Feature",
                 "geometry": {
@@ -165,17 +165,17 @@ INDICATOR_EXAMPLES = {
     "OQT AOI": {
         "summary": (
             "Request an Indicator for an AOI defined by OQT (`dataset` and "
-            "`feature_id`)."
+            "`featureId`)."
         ),
         "description": (
-            "Specify `dataset` and `feature_id` to request an already calculated "
+            "Specify `dataset` and `featureId` to request an already calculated "
             "Indicator for an AOI defined by OQT."
         ),
         "value": {
             "name": "GhsPopComparisonBuildings",
-            "layer_name": "building_count",
+            "layerName": "building_count",
             "dataset": "regions",
-            "feature_id": 3,
+            "featureId": 3,
         },
     },
 }
@@ -209,16 +209,16 @@ REPORT_EXAMPLES = {
     },
     "OQT AOI": {
         "summary": (
-            "Request a Report for a AOI defined by OQT (`dataset` and `feature_id`)."
+            "Request a Report for a AOI defined by OQT (`dataset` and `featureId`)."
         ),
         "description": (
-            "Specify `dataset` and `feature_id` to request an already calculated "
+            "Specify `dataset` and `featureId` to request an already calculated "
             "Report for an AOI defined by OQT."
         ),
         "value": {
             "name": "SimpleReport",
             "dataset": "regions",
-            "feature_id": 3,
+            "featureId": 3,
         },
     },
 }

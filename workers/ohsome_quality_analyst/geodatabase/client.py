@@ -24,11 +24,12 @@ import asyncpg
 import geojson
 from geojson import Feature, FeatureCollection, MultiPolygon, Polygon
 
+from ohsome_quality_analyst.base.indicator import BaseIndicator as Indicator
 from ohsome_quality_analyst.utils.definitions import DATASETS
-from ohsome_quality_analyst.utils.helper import (
-    datetime_to_isostring_timestamp,
-    unflatten_dict,
-)
+from ohsome_quality_analyst.utils.exceptions import EmptyRecordError
+from ohsome_quality_analyst.utils.helper import json_serialize
+
+WORKING_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 @asynccontextmanager
@@ -47,7 +48,11 @@ async def get_connection():
         await conn.close()
 
 
-async def save_indicator_results(indicator, dataset: str, feature_id: str) -> None:
+async def save_indicator_results(
+    indicator: Indicator,
+    dataset: str,
+    feature_id: str,
+) -> None:
     """Save the indicator result for a given dataset and feature in the Geodatabase.
 
     Create results table if not exists.
@@ -56,13 +61,11 @@ async def save_indicator_results(indicator, dataset: str, feature_id: str) -> No
 
     logging.info("Save indicator result to database")
 
-    working_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(working_dir, "create_results_table.sql")
+    file_path = os.path.join(WORKING_DIR, "create_results_table.sql")
     with open(file_path, "r") as file:
         create_query = file.read()
 
-    working_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(working_dir, "save_results.sql")
+    file_path = os.path.join(WORKING_DIR, "save_results.sql")
     with open(file_path, "r") as file:
         upsert_query = file.read()
 
@@ -77,7 +80,7 @@ async def save_indicator_results(indicator, dataset: str, feature_id: str) -> No
         indicator.result.value,
         indicator.result.description,
         indicator.result.svg,
-        json.dumps(indicator.as_feature(), default=datetime_to_isostring_timestamp),
+        json.dumps(indicator.as_feature(), default=json_serialize),
     )
 
     async with get_connection() as conn:
@@ -85,17 +88,26 @@ async def save_indicator_results(indicator, dataset: str, feature_id: str) -> No
         await conn.execute(upsert_query, *data)
 
 
-async def load_indicator_results(indicator, dataset: str, feature_id: str) -> bool:
+async def load_indicator_results(
+    indicator: Indicator,
+    dataset: str,
+    feature_id: str,
+) -> Indicator:
     """Get the indicator result from the Geodatabase.
 
     Reads given dataset and feature id from the indicator object.
     Load indicators results from the Geodatabase.
     Writes retrieved results to the result attribute of the indicator object.
-    """
-    logging.info("Load indicator results from database")
 
-    working_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(working_dir, "load_results.sql")
+    Returns:
+        Indicator object
+
+    Raises:
+        EmptyRecordError: If database query returns an empty record.
+    """
+    logging.info("Load Indicator results from database")
+
+    file_path = os.path.join(WORKING_DIR, "load_results.sql")
     with open(file_path, "r") as file:
         query = file.read()
 
@@ -110,7 +122,7 @@ async def load_indicator_results(indicator, dataset: str, feature_id: str) -> bo
         query_result = await conn.fetchrow(query, *query_data)
 
     if not query_result:
-        return False
+        raise EmptyRecordError()
 
     indicator.result.timestamp_oqt = query_result["timestamp_oqt"]
     indicator.result.timestamp_osm = query_result["timestamp_osm"]
@@ -119,13 +131,11 @@ async def load_indicator_results(indicator, dataset: str, feature_id: str) -> bo
     indicator.result.description = query_result["result_description"]
     indicator.result.svg = query_result["result_svg"]
 
+    # Write data back to the attributes of the indicator object
     feature = geojson.loads(query_result["feature"])
-    properties = unflatten_dict(feature["properties"])
-    result_data = properties["data"]
-
-    for key, value in result_data.items():
+    for key, value in feature["properties"]["data"].items():
         setattr(indicator, key, value)
-    return True
+    return indicator
 
 
 async def get_feature_ids(dataset: str) -> List[str]:
@@ -181,8 +191,7 @@ async def get_feature_from_db(dataset: str, feature_id: str) -> Feature:
 
 
 async def get_regions_as_geojson() -> FeatureCollection:
-    working_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(working_dir, "regions_as_geojson.sql")
+    file_path = os.path.join(WORKING_DIR, "regions_as_geojson.sql")
     with open(file_path, "r") as file:
         query = file.read()
     async with get_connection() as conn:
@@ -244,3 +253,20 @@ async def map_fid_to_uid(dataset: str, feature_id: str, fid_field: str) -> str:
     async with get_connection() as conn:
         record = await conn.fetchrow(query, feature_id)
     return str(record[0])
+
+
+async def get_shdi(bpoly: Union[Polygon, MultiPolygon]) -> float:
+    """Get Subnational Human Development Index (SHDI) for a bounding polygon.
+
+    Get SHDI by intersecting the bounding polygon with sub-national regions provided by
+    the GlobalDataLab (GDL).
+
+    If intersection with multiple GDL regions occurs, return the weighted average using
+    the intersection area as the weight.
+    """
+    file_path = os.path.join(WORKING_DIR, "select_shdi.sql")
+    with open(file_path, "r") as file:
+        query = file.read()
+    async with get_connection() as conn:
+        record = await conn.fetchrow(query, str(bpoly))
+    return record["shdi"]

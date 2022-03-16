@@ -4,22 +4,50 @@
 
 ### Breaking Changes
 
+- Update `poi` layer based on ([`openpoiservice`]) [#246])
+- Remove `ideal_vgi_poi` layer in favor of new `poi` layer ([#246])
+
+### Other Changes
+
+- Use ([`rasterstats`]) to provide access to third-party raster datasets stored on disk ([#227])
+- Utilize `singledispatch` for `create_indicator` function of the `oqt` module ([#239])
+- Add `landmarks` layer [#246])
+- Add SHDI to database and add functionality to get SHDI for an AOI by intersection using SQL ([#266])
+
+[#221]: https://github.com/GIScience/ohsome-quality-analyst/pull/221
+[#227]: https://github.com/GIScience/ohsome-quality-analyst/pull/227
+[#239]: https://github.com/GIScience/ohsome-quality-analyst/pull/239
+[#246]: https://github.com/GIScience/ohsome-quality-analyst/pull/246
+[#266]: https://github.com/GIScience/ohsome-quality-analyst/pull/266
+[`rasterstats`]: https://github.com/perrygeo/python-rasterstats
+[`openpoiservice`]: https://github.com/GIScience/openpoiservice
+
+
+## 0.8.0
+
+### Breaking Changes
+
 - Remove "IDEAL-VGI Land Use and Land Cover" as valid layer for the Mapping Saturation indicator ([#221])
 - Disable support of the parameter `bpolys` for GET requests to the API ([#223])
+- Rewrite of the Mapping Saturation indicator to use statistical models from the R language ([#170])
 
 ### Other Changes
 
 - Improve API Swagger interface by adding more examples and better documentation ([#237])
 - Make `pydantic` data models more modular ([#237])
+- Use [`scipy`] to fit sigmoid curves to data for the Mapping Saturation indicator ([#170])
 
 ### How to upgrade
 
 - `ideal_vgi_lulc` is not a valid layer for the Mapping Saturation indicator anymore ([#221])
 - For requests to the `/indicator` or `/report` endpoints of the API for a custom AOI (usage of the `bpolys` parameter): use the POST method ([#223])
+- `R` (≥ 4.0) needs to be available on the system on which OQT runs ([#170])
 
-[#221]: https://github.com/GIScience/ohsome-quality-analyst/pull/221
+[#170]: https://github.com/GIScience/ohsome-quality-analyst/pull/170
 [#223]: https://github.com/GIScience/ohsome-quality-analyst/pull/223
+[#227]: https://github.com/GIScience/ohsome-quality-analyst/pull/227
 [#237]: https://github.com/GIScience/ohsome-quality-analyst/pull/237
+[`scipy`]: https://scipy.org/
 
 
 ## 0.7.0

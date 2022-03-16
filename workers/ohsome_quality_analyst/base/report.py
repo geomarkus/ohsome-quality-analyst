@@ -4,7 +4,7 @@ from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
 from io import StringIO
 from statistics import mean
-from typing import Dict, List, Literal, NamedTuple, Optional, Tuple
+from typing import Dict, List, Literal, NamedTuple, Tuple
 
 import geojson
 import jinja2
@@ -14,7 +14,7 @@ from geojson import Feature
 from matplotlib import pyplot as plt
 
 from ohsome_quality_analyst.base.indicator import BaseIndicator
-from ohsome_quality_analyst.utils.definitions import get_metadata
+from ohsome_quality_analyst.utils.definitions import get_attribution, get_metadata
 from ohsome_quality_analyst.utils.helper import flatten_dict
 
 
@@ -45,16 +45,7 @@ class IndicatorLayer(NamedTuple):
 class BaseReport(metaclass=ABCMeta):
     """Subclass has to create and append indicator objects to indicators list."""
 
-    def __init__(
-        self,
-        feature: Feature = None,
-        dataset: Optional[str] = None,
-        feature_id: Optional[int] = None,
-        fid_field: Optional[str] = None,
-    ):
-        self.dataset = dataset
-        self.feature_id = feature_id
-        self.fid_field = fid_field
+    def __init__(self, feature: Feature = None):
         self.feature = feature
 
         # Defines indicator+layer combinations
@@ -79,7 +70,7 @@ class BaseReport(metaclass=ABCMeta):
         report_properties["metadata"].pop("label_description", None)
         properties = flatten_dict(report_properties, prefix="report")
         for i, indicator in enumerate(self.indicators):
-            p = indicator.as_feature()["properties"]
+            p = indicator.as_feature(flatten=True)["properties"]
             properties.update(
                 {"indicators." + str(i) + "." + str(key): val for key, val in p.items()}
             )
@@ -91,11 +82,6 @@ class BaseReport(metaclass=ABCMeta):
             )
         else:
             return Feature(geometry=self.feature.geometry, properties=properties)
-
-    @abstractmethod
-    def set_indicator_layer(self) -> None:
-        """Set the attribute indicator_layer."""
-        pass
 
     @abstractmethod
     def combine_indicators(self) -> None:
@@ -215,3 +201,19 @@ class BaseReport(metaclass=ABCMeta):
             traffic_light=traffic_light,
             map=map,
         )
+
+    @abstractmethod
+    def set_indicator_layer(self) -> None:
+        """Set the attribute indicator_layer."""
+        pass
+
+    @classmethod
+    def attribution(cls) -> str:
+        """Data attribution as text.
+
+        Defaults to OpenStreetMap attribution.
+
+        This property should be overwritten by the Sub Class if additional data
+        attribution is necessary.
+        """
+        return get_attribution(["OSM"])

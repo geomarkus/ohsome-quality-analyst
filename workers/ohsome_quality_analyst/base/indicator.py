@@ -3,6 +3,7 @@ TODO:
     Describe this module and how to implement child classes
 """
 
+import json
 import os
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
@@ -15,7 +16,12 @@ import matplotlib.pyplot as plt
 from dacite import from_dict
 from geojson import Feature
 
-from ohsome_quality_analyst.utils.definitions import get_layer_definition, get_metadata
+from ohsome_quality_analyst.utils.definitions import (
+    get_attribution,
+    get_layer_definition,
+    get_metadata,
+)
+from ohsome_quality_analyst.utils.helper import flatten_dict, json_serialize
 
 
 @dataclass
@@ -40,11 +46,22 @@ class LayerDefinition:
     endpoint: str
     filter: str
     ratio_filter: Optional[str] = None
+    source: Optional[str] = None
 
 
 @dataclass
 class Result:
-    """The result of the Indicator."""
+    """The result of the Indicator.
+
+    Attributes:
+        timestamp_oqt (datetime): Timestamp of the creation of the indicator
+        timestamp_osm (datetime): Timestamp of the used OSM data
+            (e.g. Latest timestamp of the ohsome API results)
+        label (str): Traffic lights like quality label
+        value (float): The result value as float ([0, 1])
+        description (str): Description of the result
+        svg (str): Figure of the result as SVG
+    """
 
     timestamp_oqt: datetime
     timestamp_osm: Optional[datetime]
@@ -83,23 +100,30 @@ class BaseIndicator(metaclass=ABCMeta):
             html=None,
         )
 
-    def as_feature(self) -> Feature:
+    def as_feature(self, flatten: bool = False) -> Feature:
         """Returns a GeoJSON Feature object.
 
         The properties of the Feature contains the attributes of the indicator.
         The geometry (and properties) of the input GeoJSON object is preserved.
+
+        Args:
+            flatten (bool): If true flatten the properties.
         """
-        result = vars(self.result).copy()
-        # Prefix all keys of the dictionary
         properties = {
-            "metadata.name": self.metadata.name,
-            "metadata.description": self.metadata.description,
-            "layer.name": self.layer.name,
-            "layer.description": self.layer.description,
-            **{"result." + str(key): val for key, val in result.items()},
-            **{"data." + str(key): val for key, val in self.data.items()},
+            "metadata": {
+                "name": self.metadata.name,
+                "description": self.metadata.name,
+            },
+            "layer": {
+                "name": self.layer.name,
+                "description": self.layer.description,
+            },
+            "result": vars(self.result).copy(),
+            "data": self.data,
             **self.feature.properties,
         }
+        if flatten:
+            properties = flatten_dict(properties)
         if "id" in self.feature.keys():
             return Feature(
                 id=self.feature.id,
@@ -107,17 +131,38 @@ class BaseIndicator(metaclass=ABCMeta):
                 properties=properties,
             )
         else:
-            return Feature(geometry=self.feature.geometry, properties=properties)
+            return Feature(
+                geometry=self.feature.geometry,
+                properties=properties,
+            )
 
     @property
     def data(self) -> dict:
-        """All indicator attributes except feature, result, metadata and layer."""
+        """All Indicator object attributes except feature, result, metadata and layer.
+
+        Note:
+            Attributes will be dumped and immediately loaded again by the `json`
+            library. In this process a custom function for serializing data types which
+            are not supported by the `json` library (E.g. numpy datatypes or objects of
+            the `BaseModelStats` class) will be executed.
+        """
         data = vars(self).copy()
         data.pop("result")
         data.pop("metadata")
         data.pop("layer")
         data.pop("feature")
-        return data
+        return json.loads(json.dumps(data, default=json_serialize).encode())
+
+    @classmethod
+    def attribution(cls) -> str:
+        """Data attribution as text.
+
+        Defaults to OpenStreetMap attribution.
+
+        This property should be overwritten by the Sub Class if additional data
+        attribution is necessary.
+        """
+        return get_attribution(["OSM"])
 
     @abstractmethod
     async def preprocess(self) -> None:
