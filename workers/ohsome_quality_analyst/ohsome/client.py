@@ -1,5 +1,4 @@
 import datetime
-import json
 import logging
 from typing import Optional, Union
 
@@ -20,10 +19,8 @@ from ohsome_quality_analyst.utils.exceptions import OhsomeApiError
 # TODO: Add more tests for ohsome package.
 async def query(
     layer,
-    bpolys: Union[Polygon, MultiPolygon],
+    bpolys: Feature,
     time: Optional[str] = None,
-    endpoint: Optional[str] = None,
-    ratio: bool = False,
 ) -> dict:
     """
     Query ohsome API endpoint with filter.
@@ -31,32 +28,69 @@ async def query(
     Time is one or more ISO-8601 conform timestring(s).
     https://docs.ohsome.org/ohsome-api/v1/time.html
     """
-    url = build_url(layer, endpoint, ratio)
-    data = build_data_dict(layer, bpolys, time, ratio)
+    url = "/".join(
+        OHSOME_API.rstrip("/"),
+        layer.endpoint.rstrip("/"),
+    )
+    data = build_data_dict(
+        FeatureCollection(bpolys),
+        layer,
+        time,
+    )
     logging.info("Query ohsome API.")
-    logging.debug("Query URL: " + url)
-    logging.debug("Query data: " + json.dumps(data))
     return await query_ohsome_api(url, data)
 
 
-async def query_ohsome_api(url: str, data: dict, headers: dict = {}) -> dict:
-    # custom timeout as ohsome API can take a long time to send an answer (< 10 minutes)
-    # 660s timeout for reading, and a 300s timeout elsewhere.
-    timeout = httpx.Timeout(300, read=660)
-    headers["user-agent"] = USER_AGENT
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        resp = await client.post(url, data=data, headers=headers)
+# TODO: Multidispatch
+async def query(
+    layer,
+    bpolys: FeatureCollection,
+    time: Optional[str] = None,
+) -> dict:
+    """
+    Query ohsome API endpoint with filter.
 
-    # ohsome API response status codes are either 4xx and 5xx or 200
+    Time is one or more ISO-8601 conform timestring(s).
+    https://docs.ohsome.org/ohsome-api/v1/time.html
+    """
+    url = "/".join(
+        OHSOME_API.rstrip("/"),
+        layer.endpoint.rstrip("/"),
+        "groupBy",
+        "boundary",
+    )
+    data = build_data_dict(
+        bpolys,
+        layer,
+        time,
+    )
+    logging.info("Query ohsome API.")
+    return await query_ohsome_api(url, data)
+
+
+async def query_ohsome_api(url: str, data: dict) -> dict:
+    """Query the ohsome API.
+
+    A custom connection timeout is set since the ohsome API can take a long time to
+    send an answer (< 10 minutes).
+
+    Raises:
+        OhsomeApiError: In case of 4xx and 5xx response status codes or invalid
+            response due to timeout during streaming.
+
+    """
+    async with httpx.AsyncClient(timeout=httpx.Timeout(300, read=660)) as client:
+        resp = await client.post(
+            url,
+            data=data,
+            headers={"user-agent": USER_AGENT},
+        )
     try:
-        # Raise for response status codes 4xx and 5xx.
-        # This will raise an error (400) in case of invalid time parameter.
         resp.raise_for_status()
     except httpx.HTTPStatusError as error:
         raise OhsomeApiError(
             "Querying the ohsome API failed! " + error.response.json()["message"]
         ) from error
-
     try:
         return geojson.loads(resp.content)
     except JSONDecodeError as error:
@@ -77,39 +111,20 @@ async def get_latest_ohsome_timestamp() -> datetime.datetime:
     return timestamp
 
 
-def build_url(
-    layer,
-    endpoint: Optional[str] = None,
-    ratio: bool = False,
-) -> str:
-    """Build endpoint URL of ohsome API."""
-    ohsome_api = OHSOME_API.rstrip("/")
-    if endpoint is None:
-        endpoint = layer.endpoint
-    url = ohsome_api + "/" + endpoint.rstrip("/")
-    if ratio:
-        return url + "/" + "ratio"
-    return url
-
-
 def build_data_dict(
-    layer,
-    bpolys: Union[Polygon, MultiPolygon],
+    bpolys: FeatureCollection,
+    layer: Layer,
     time: Optional[str] = None,
-    ratio: bool = False,
 ) -> dict:
     """Build data dictionary for ohsome API query."""
-    data = {
-        "bpolys": geojson.dumps(FeatureCollection([Feature(geometry=bpolys)])),
-        "filter": layer.filter,
-    }
-    if ratio:
-        if layer.ratio_filter is None:
-            raise ValueError(
-                "Layer '{0}' has not 'ratio_filter' defined.".format(layer.name)
-            )
-        else:
-            data["filter2"] = layer.ratio_filter
-    if time is not None:
-        data["time"] = time
-    return data
+    if time:
+        return {
+            "bpolys": bpolys,
+            "filter": layer.filter,
+            "time": time,
+        }
+    else:
+        return {
+            "bpolys": bpolys,
+            "filter": layer.filter,
+        }

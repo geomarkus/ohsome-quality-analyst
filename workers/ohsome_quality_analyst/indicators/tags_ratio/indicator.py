@@ -24,10 +24,16 @@ class TagsRatio(BaseIndicator):
         self.count_match = None
 
     async def preprocess(self) -> None:
-
-        query_results_count = await ohsome_client.query(
-            layer=self.layer, bpolys=self.feature.geometry, ratio=True
+        url = "{1}/{2}/ratio".format(
+            OHSOME_API.rstrip("/"),
+            layer.endpoint.rstrip("/"),
         )
+        data = {
+            "bpolys": geojson.dumps(FeatureCollection(self.feature)),
+            "filter": layer.filter,
+            "filter2": layer.ratio_filter,
+        }
+        query_results_count = await ohsome_client.query_ohsome_api(url, data)
         self.ratio = query_results_count["ratioResult"][0]["ratio"]
         self.count_all = query_results_count["ratioResult"][0]["value"]
         self.count_match = query_results_count["ratioResult"][0]["value2"]
