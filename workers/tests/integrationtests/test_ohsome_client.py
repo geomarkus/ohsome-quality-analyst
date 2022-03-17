@@ -2,12 +2,18 @@ import unittest
 
 from schema import Schema
 
-from ohsome_quality_analyst.ohsome.client import query  # , query_custom
+from ohsome_quality_analyst.ohsome import client
 
 from .utils import get_geojson_fixture, oqt_vcr
 
 
-class TestGeodatabase(unittest.TestCase):
+
+class TestOhsomeClient(unittest.TestCase):
+    def test_get_latest_ohsome_timestamp():
+        client.get_latest_ohsome_timestamp()
+
+
+class TestOhsomeClientQuery(unittest.TestCase):
     def setUp(self):
         self.feature = get_geojson_fixture("heidelberg-altstadt-feature.geojson")
         self.feature_collection = get_geojson_fixture(
@@ -26,37 +32,41 @@ class TestGeodatabase(unittest.TestCase):
         )
 
     @oqt_vcr.use_cassette()
-    def test_query_layer_feature(self):
-        result = query(self.layer, self.feature)
+    def test_layer_feature(self):
+        result = client.query(self.layer, self.feature)
         self.assertTrue(self.schema.is_valid(result))
 
     @oqt_vcr.use_cassette()
-    def test_query_layer_feature_time(self):
-        result = query(self.layer, self.feature, self.time)
+    def test_layer_feature_time(self):
+        result = client.query(self.layer, self.feature, self.time)
         self.assertTrue(self.schema.is_valid(result))
 
     @oqt_vcr.use_cassette()
-    def test_query_layer_feature_collection(self):
+    def test_layer_feature_collection(self):
         """Test groupBy boundary query."""
-        result = query(self.layer, self.feature_collection)
+        result = client.query(self.layer, self.feature_collection)
         self.assertTrue(self.schema_group_by.is_valid(result))
 
     @oqt_vcr.use_cassette()
-    def test_query_layer_feature_collection_time(self):
+    def test_layer_feature_collection_time(self):
         """Test groupBy boundary query."""
-        result = query(self.layer, self.feature_collection, self.time)
+        result = client.query(self.layer, self.feature_collection, self.time)
         self.assertTrue(self.schema_group_by.is_valid(result))
 
     @oqt_vcr.use_cassette()
-    def test_query_custom(self):
+    def test_custom(self):
         endpoint = "elements/area"
         filter_ = "building=* and geometry:polygon"
-        result = query_custom(self.feature, endpoint, _filter, self.time)
+        url = ""
+        data = ""
+        result = client.query_ohsome_api(url, data)
         self.assertTrue(self.schema.is_valid(result))
 
     @oqt_vcr.use_cassette()
-    def test_query_custom_ratio(self):
+    def test_custom_ratio(self):
         endpoint = "elements/count/ratio"
         filter_ = "power=plant"
         filter2 = "power=plant and power=* and name=*"
-        result = query_custom(self.feature, endpoint, filter_, filter2, self.time)
+        url = ""
+        data = ""
+        result = client.query_ohsome_api(url, data)

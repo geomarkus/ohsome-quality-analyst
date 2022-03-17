@@ -16,8 +16,11 @@ from ohsome_quality_analyst.utils.definitions import OHSOME_API, USER_AGENT
 from ohsome_quality_analyst.utils.exceptions import OhsomeApiError
 
 
-# TODO: Add more tests for ohsome package.
-async def query(
+async def query():
+    raise NotImplementedError
+
+
+async def _query(
     layer,
     bpolys: Feature,
     time: Optional[str] = None,
@@ -28,21 +31,17 @@ async def query(
     Time is one or more ISO-8601 conform timestring(s).
     https://docs.ohsome.org/ohsome-api/v1/time.html
     """
-    url = "/".join(
-        OHSOME_API.rstrip("/"),
-        layer.endpoint.rstrip("/"),
-    )
+    url = build_url(layer)
     data = build_data_dict(
         FeatureCollection(bpolys),
         layer,
         time,
     )
-    logging.info("Query ohsome API.")
     return await query_ohsome_api(url, data)
 
 
 # TODO: Multidispatch
-async def query(
+async def _query(
     layer,
     bpolys: FeatureCollection,
     time: Optional[str] = None,
@@ -53,11 +52,9 @@ async def query(
     Time is one or more ISO-8601 conform timestring(s).
     https://docs.ohsome.org/ohsome-api/v1/time.html
     """
-    url = "/".join(
-        OHSOME_API.rstrip("/"),
-        layer.endpoint.rstrip("/"),
-        "groupBy",
-        "boundary",
+    url = build_url(
+        self.layer,
+        ["groupBy", "boundary"],
     )
     data = build_data_dict(
         bpolys,
@@ -109,6 +106,10 @@ async def get_latest_ohsome_timestamp() -> datetime.datetime:
     timestamp_str = str(resp.json()["extractRegion"]["temporalExtent"]["toTimestamp"])
     timestamp = datetime.datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%MZ")
     return timestamp
+
+
+def build_url(layer: Layer, path: List = []):
+    return "/".join(OHSOME_API.rstrip("/"), layer.endpoint.rstrip("/"), *path)
 
 
 def build_data_dict(
