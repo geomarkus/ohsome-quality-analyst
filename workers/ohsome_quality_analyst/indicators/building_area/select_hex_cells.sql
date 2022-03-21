@@ -18,13 +18,16 @@ FROM (
                     json_strip_nulls (row_to_json(t))
                 FROM (
                     SELECT
+                        ogc_fid,
                         tile_id,
                         id
-                        ) AS t) AS "properties"
+                        /*
+                         SUM(ST_Area (ST_Intersection (hexcells.wkb_geometry,
+                         bpoly.geom)::geography) / ST_Area
+                         (hexcells.wkb_geometry::geography)) AS area)
+                         */) AS t) AS "properties"
             FROM
                 hexcells,
                 bpoly
             WHERE
-                ST_Intersects (hexcells.wkb_geometry, bpoly.geom)
-        ) AS feature
-    ) AS feature_collection;
+                ST_Intersects (hexcells.wkb_geometry, bpoly.geom)) AS feature) AS feature_collection;
