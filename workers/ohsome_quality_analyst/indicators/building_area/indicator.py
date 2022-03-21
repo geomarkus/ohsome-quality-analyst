@@ -194,6 +194,28 @@ def get_smod_class_share(feature) -> dict:
     return {k: v / pixel_count for k, v in class_count.items()}
 
 
+async def select_hex_cells(feature) -> Feature:
+    """Select hex-cells which intersect with given feature.
+
+    Returns:
+        Feature: The properties will contain IDs.
+            Also it will contain a area field which is the proportion of intersection.
+            1.0 means that the hex-cell is covered by the input geometry.
+            Below that only part of the hex-cell intersects with the input geometry.
+    """
+    file_path = os.path.join(
+        os.path.dirname(
+            os.path.abspath(__file__),
+        ),
+        "select_hex_cells.sql",
+    )
+    with open(file_path, "r") as file:
+        query = file.read()
+    async with db_client.get_connection() as conn:
+        record = await conn.fetchrow(query, str(feature))
+    return record[0]
+
+
 # TOOO: define self.model_name (see TODO above)
 # TODO: check, whether raster containing no value and therefore indicator should be
 #           undefined
