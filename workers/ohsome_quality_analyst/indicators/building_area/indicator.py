@@ -102,9 +102,6 @@ class BuildingArea(BaseIndicator):
                 get_raster_dataset("GHS_POP_R2019A"),
                 stats="sum",
             )[0]["sum"]
-            ghs_pop = 5500
-            # TODO: Remove the line above. It was only used for testing as the ghs_pop
-            #  test raster only covers heidelberg
             area = await db_client.get_area_of_bpolys(hexcell.geometry)
             ghs_pop_density = ghs_pop / area
             data = {
@@ -119,7 +116,6 @@ class BuildingArea(BaseIndicator):
             self.covariates.append(from_dict(data_class=Covariates, data=data))
 
     def calculate(self) -> None:
-        # TODO: Execute for each hexcells
         directory = os.path.dirname(os.path.abspath(__file__))
         min_max_scaler = load_sklearn_model(os.path.join(directory, "scaler.joblib"))
         random_forest_regressor = load_sklearn_model(
@@ -240,10 +236,13 @@ async def select_hex_cells(feature) -> FeatureCollection:
     return geojson.loads(record[0])
 
 
-# TOOO: define self.model_name (see TODO above)
 # TODO: check, whether raster containing no value and therefore indicator should be
 #           undefined
 # TODO: discuss & adjust percentage boundaries for green/yellow/red. Adjust values in
 #           metadata.yaml as well(see TODO above)
+# TODO: at the moment, percentages per hexcell are used with same importance to
+#           calculate result value. make it a weighted calculation so the percentage of
+#           hexcells overlaid by a greater percentage of the input feature should
+#           contribute more
 # TODO: discuss: as the regressor is only trained with samples from africa, make it
 #           usable for features in africa only?
