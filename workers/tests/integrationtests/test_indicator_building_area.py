@@ -65,7 +65,7 @@ class TestIndicatorBuildingArea(unittest.TestCase):
         self.assertDictEqual(result, {"urban_centre": 1.0})
 
     def test_select_hex_cells(self):
-        # TODO: Add fid 12 to test regions
+        # TODO: Add fid 12 to test regions in DB
         self.feature = asyncio.run(
             db_client.get_feature_from_db(dataset="regions", feature_id="12")
         )

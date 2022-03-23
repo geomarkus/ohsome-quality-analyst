@@ -7,6 +7,7 @@ from dacite import from_dict
 
 # import matplotlib.pyplot as plt
 from geojson import Feature
+from Typing import List
 
 import ohsome_quality_analyst.geodatabase.client as db_client
 from ohsome_quality_analyst.base.indicator import BaseIndicator
@@ -68,49 +69,54 @@ class BuildingArea(BaseIndicator):
             layer_name=layer_name,
             feature=feature,
         )
-        self.model_name = "Random Forest Regressor"
-        self.covariates: Covariates = None
-        self.building_area_osm = None
-        self.building_area_prediction = None
+        self.model_name: str = "Random Forest Regressor"
+        self.covariates: List[Covariates] = []
+        self.building_area_osm: list = []
+        self.building_area_prediction: list = []
 
     async def preprocess(self) -> None:
         # Get OSM data
-        query_results = await ohsome_client.query(
-            layer=self.layer,
-            bpolys=self.feature.geometry,
-        )
-        self.building_area_osm = query_results["result"][0]["value"]
-        self.result.timestamp_osm = dateutil.parser.isoparse(
-            query_results["result"][0]["timestamp"]
-        )
+        # TODO: Tilling of input geom (self.feature)
+        hexcells: FeatureCollection = None
+        for hexcell in hexcells["features"]:
+            # TODO: Get OSM data for each hexcells
+            query_results = await ohsome_client.query(
+                layer=self.layer,
+                bpolys=self.feature.geometry,
+            )
+            self.building_area_osm = query_results["result"][0]["value"]
+            self.result.timestamp_osm = dateutil.parser.isoparse(
+                query_results["result"][0]["timestamp"]
+            )
 
-        # Get covariates
-        vnl = raster_client.get_zonal_stats(
-            self.feature,
-            get_raster_dataset("VNL"),
-            stats="sum",
-        )[0]["sum"]
-        ghs_pop = raster_client.get_zonal_stats(
-            self.feature,
-            get_raster_dataset("GHS_POP_R2019A"),
-            stats="sum",
-        )[0]["sum"]
-        area = await db_client.get_area_of_bpolys(self.feature.geometry)
-        ghs_pop_density = ghs_pop / area
-        data = {
-            **get_smod_class_share(self.feature),
-            "ghs_pop_density": ghs_pop_density,
-            # TODO: Waiting for PR 266
-            "ghs_pop": ghs_pop,
-            "vnl": vnl,
-            # "shdi": db_client.get_shdi(self.feature.geometry)
-            "shdi": 0.5,
-        }
-        self.covariates = from_dict(data_class=Covariates, data=data)
+            # TODO: Get covariates for each hexcells
+            # Get covariates
+            vnl = raster_client.get_zonal_stats(
+                self.feature,
+                get_raster_dataset("VNL"),
+                stats="sum",
+            )[0]["sum"]
+            ghs_pop = raster_client.get_zonal_stats(
+                self.feature,
+                get_raster_dataset("GHS_POP_R2019A"),
+                stats="sum",
+            )[0]["sum"]
+            area = await db_client.get_area_of_bpolys(self.feature.geometry)
+            ghs_pop_density = ghs_pop / area
+            data = {
+                **get_smod_class_share(self.feature),
+                "ghs_pop_density": ghs_pop_density,
+                # TODO: Waiting for PR 266
+                "ghs_pop": ghs_pop,
+                "vnl": vnl,
+                # "shdi": db_client.get_shdi(self.feature.geometry)
+                "shdi": 0.5,
+            }
+            self.covariates.append(from_dict(data_class=Covariates, data=data))
 
     def calculate(self) -> None:
+        # TODO: Execute for each hexcells
         directory = os.path.dirname(os.path.abspath(__file__))
-
         min_max_scaler = load_sklearn_model(os.path.join(directory, "scaler.joblib"))
         random_forest_regressor = load_sklearn_model(
             os.path.join(directory, "model.joblib")
@@ -213,6 +219,7 @@ async def select_hex_cells(feature) -> Feature:
         query = file.read()
     async with db_client.get_connection() as conn:
         record = await conn.fetchrow(query, str(feature))
+    # TODO geojson.loads
     return record[0]
 
 
