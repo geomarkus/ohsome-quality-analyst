@@ -1,5 +1,6 @@
 import os
 from dataclasses import asdict, dataclass
+from statistics import mean
 from string import Template
 from typing import List
 
@@ -73,37 +74,38 @@ class BuildingArea(BaseIndicator):
         self.model_name: str = "Random Forest Regressor"
         self.covariates: List[Covariates] = []
         self.building_area_osm: list = []
+        self.result.timestamp_osm: list = []
         self.building_area_prediction: list = []
         self.hexcells = None
 
     async def preprocess(self) -> None:
-        # Get OSM data
-        # TODO: Tilling of input geom (self.feature)
-        hexcells: FeatureCollection = None
+        # Get OSM data per hexcell
+        hexcells: FeatureCollection = await select_hex_cells(self.feature.geometry)
         for hexcell in hexcells["features"]:
-            # TODO: Get OSM data for each hexcells
             query_results = await ohsome_client.query(
                 layer=self.layer,
-                bpolys=self.feature.geometry,
+                bpolys=hexcell.geometry,
             )
-            self.building_area_osm = query_results["result"][0]["value"]
-            self.result.timestamp_osm = dateutil.parser.isoparse(
-                query_results["result"][0]["timestamp"]
+            self.building_area_osm.append(query_results["result"][0]["value"])
+            self.result.timestamp_osm.append(
+                dateutil.parser.isoparse(query_results["result"][0]["timestamp"])
             )
 
-            # TODO: Get covariates for each hexcells
             # Get covariates
             vnl = raster_client.get_zonal_stats(
-                self.feature,
+                hexcell,
                 get_raster_dataset("VNL"),
                 stats="sum",
             )[0]["sum"]
             ghs_pop = raster_client.get_zonal_stats(
-                self.feature,
+                hexcell,
                 get_raster_dataset("GHS_POP_R2019A"),
                 stats="sum",
             )[0]["sum"]
-            area = await db_client.get_area_of_bpolys(self.feature.geometry)
+            ghs_pop = 5500
+            # TODO: Remove the line above. It was only used for testing as the ghs_pop
+            #  test raster only covers heidelberg
+            area = await db_client.get_area_of_bpolys(hexcell.geometry)
             ghs_pop_density = ghs_pop / area
             data = {
                 **get_smod_class_share(self.feature),
@@ -124,24 +126,38 @@ class BuildingArea(BaseIndicator):
             os.path.join(directory, "model.joblib")
         )
 
-        cov = asdict(self.covariates)
-        scaled = min_max_scaler.transform(
-            [[v for k, v in cov.items() if k in ("ghs_pop", "ghs_pop_density", "vnl")]]
-        )
-        cov["ghs_pop"] = scaled[0][0]
-        cov["ghs_pop_density"] = scaled[0][1]
-        cov["vnl"] = scaled[0][2]
+        for cov_per_hex in self.covariates:
+            cov = asdict(cov_per_hex)
+            scaled = min_max_scaler.transform(
+                [
+                    [
+                        v
+                        for k, v in cov.items()
+                        if k in ("ghs_pop", "ghs_pop_density", "vnl")
+                    ]
+                ]
+            )
+            cov["ghs_pop"] = scaled[0][0]
+            cov["ghs_pop_density"] = scaled[0][1]
+            cov["vnl"] = scaled[0][2]
 
-        self.building_area_prediction = random_forest_regressor.predict(
-            [list(cov.values())]
-        )[0]
-        # Percentage mapped
-        self.result.value = self.building_area_osm / self.building_area_prediction
+            self.building_area_prediction.append(
+                random_forest_regressor.predict([list(cov.values())])[0]
+            )
+
+        percentages_per_hex = [
+            osm / prediction
+            for osm, prediction in zip(
+                self.building_area_osm, self.building_area_prediction
+            )
+        ]
+        # Percentage mapped over all (partially) covered
+        self.result.value = mean(percentages_per_hex)
 
         description = Template(self.metadata.result_description).substitute(
-            building_area_osm=self.building_area_osm,
-            building_area_prediction=self.building_area_prediction,
-            percentage_mapped=self.result.value * 100,
+            building_area_osm=round(mean(self.building_area_osm), 2),
+            building_area_prediction=round(mean(self.building_area_prediction), 2),
+            percentage_mapped=round(self.result.value * 100, 2),
         )
         # TODO: adjust percentage boundaries for green/yellow/red. Adjust in medata.yaml
         #       as well
@@ -202,12 +218,12 @@ def get_smod_class_share(feature) -> dict:
     return {k: v / pixel_count for k, v in class_count.items()}
 
 
-async def select_hex_cells(feature) -> Feature:
+async def select_hex_cells(feature) -> FeatureCollection:
     """Select hex-cells which intersect with given feature.
 
     Returns:
         Feature: The properties will contain IDs.
-            Also it will contain a area field which is the proportion of intersection.
+            Also it will contain an area field which is the proportion of intersection.
             1.0 means that the hex-cell is covered by the input geometry.
             Below that only part of the hex-cell intersects with the input geometry.
     """
