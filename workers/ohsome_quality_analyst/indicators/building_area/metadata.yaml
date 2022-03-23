@@ -23,4 +23,4 @@ BuildingArea:
   result_description: |
     The building area mapped in OSM is $building_area_osm sqkm and the expected building 
     area for this feature is $building_area_prediction sqkm. Accordingly, the area mapped
-    in OSM is $percentage_mapped of the expected area
+    in OSM is $percentage_mapped% of the expected area
