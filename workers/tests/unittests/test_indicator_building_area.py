@@ -1,10 +1,11 @@
 import os
 import unittest
+
+import numpy as np
 from sklearn.model_selection import cross_validate
 
 from ohsome_quality_analyst.indicators import building_area
 from ohsome_quality_analyst.utils.helper import load_sklearn_model
-import numpy as np
 
 
 class TestIndicatorBuildingArea(unittest.TestCase):
@@ -13,7 +14,7 @@ class TestIndicatorBuildingArea(unittest.TestCase):
         # Cross validation scores
         # TODO: Define range in which comparison is escapable
         r2 = 0.8447905202750137
-        mse =184080026653.65894
+        mse = 184080026653.65894
         mae = 213554.47485382063
         explained_variance = 0.8465967980937054
 

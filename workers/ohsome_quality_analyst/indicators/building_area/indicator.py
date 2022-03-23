@@ -1,13 +1,14 @@
 import os
 from dataclasses import asdict, dataclass
 from string import Template
+from typing import List
 
 import dateutil.parser
+import geojson
 from dacite import from_dict
 
 # import matplotlib.pyplot as plt
-from geojson import Feature
-from Typing import List
+from geojson import Feature, FeatureCollection
 
 import ohsome_quality_analyst.geodatabase.client as db_client
 from ohsome_quality_analyst.base.indicator import BaseIndicator
@@ -73,6 +74,7 @@ class BuildingArea(BaseIndicator):
         self.covariates: List[Covariates] = []
         self.building_area_osm: list = []
         self.building_area_prediction: list = []
+        self.hexcells = None
 
     async def preprocess(self) -> None:
         # Get OSM data
@@ -219,8 +221,7 @@ async def select_hex_cells(feature) -> Feature:
         query = file.read()
     async with db_client.get_connection() as conn:
         record = await conn.fetchrow(query, str(feature))
-    # TODO geojson.loads
-    return record[0]
+    return geojson.loads(record[0])
 
 
 # TOOO: define self.model_name (see TODO above)

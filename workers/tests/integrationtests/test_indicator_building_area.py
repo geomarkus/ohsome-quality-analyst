@@ -2,6 +2,8 @@ import asyncio
 import unittest
 from datetime import datetime
 
+from geojson import FeatureCollection
+
 from ohsome_quality_analyst.geodatabase import client as db_client
 from ohsome_quality_analyst.indicators.building_area.indicator import (
     BuildingArea,
@@ -70,7 +72,7 @@ class TestIndicatorBuildingArea(unittest.TestCase):
             db_client.get_feature_from_db(dataset="regions", feature_id="12")
         )
         result = asyncio.run(select_hex_cells(self.feature.geometry))
-        breakpoint()
+        self.assertIsInstance(result, FeatureCollection)
 
 
 if __name__ == "__main__":
