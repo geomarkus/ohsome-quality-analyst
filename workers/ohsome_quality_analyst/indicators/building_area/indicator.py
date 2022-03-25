@@ -148,7 +148,13 @@ class BuildingArea(BaseIndicator):
             )
         ]
         # Percentage mapped over all (partially) covered
-        self.result.value = mean(percentages_per_hex)
+        if mean(percentages_per_hex) <= 1:
+            self.result.value = mean(percentages_per_hex)
+        else:
+            self.result.value = 1
+            # TODO: Discuss, if maximum result value should be '1' or calculated value.
+            #  However, calculated value can be greater than 1 when a greater building
+            #  area is mapped in OSM than OQT predicted...
 
         description = Template(self.metadata.result_description).substitute(
             building_area_osm=round(mean(self.building_area_osm), 2),
@@ -236,8 +242,12 @@ async def select_hex_cells(feature) -> FeatureCollection:
     return geojson.loads(record[0])
 
 
+# TODO: implement function create_figure
 # TODO: check, whether raster containing no value and therefore indicator should be
 #           undefined
+# TODO: Discuss, if maximum result value should be '1' or calculated value.
+#           However, calculated value can be greater than 1 when a greater building
+#           area is mapped in OSM than OQT predicted...
 # TODO: discuss & adjust percentage boundaries for green/yellow/red. Adjust values in
 #           metadata.yaml as well(see TODO above)
 # TODO: at the moment, percentages per hexcell are used with same importance to
@@ -245,4 +255,6 @@ async def select_hex_cells(feature) -> FeatureCollection:
 #           hexcells overlaid by a greater percentage of the input feature should
 #           contribute more
 # TODO: discuss: as the regressor is only trained with samples from africa, make it
-#           usable for features in africa only?
+#           usable for features in africa only? At the moment implemented that way, as
+#           only the hexcells of africa are within the DB. But maybe we should document
+#           it somewhere
