@@ -314,3 +314,21 @@ lulc:
     https://github.com/jasp382/glass/tree/master/core/glass/ete/osm2lulc;
     Schultz et al 2017 https://doi.org/10.1016/j.jag.2017.07.014;
     https://www.geog.uni-heidelberg.de/gis/ideal_en.html
+    
+all_roads_count:
+  name: All Roads
+  description: |
+    The road network defined by all objects which hold a highway-tag as defined in the OSM Wiki`:`
+    https://wiki.openstreetmap.org/wiki/Key:highway
+  endpoint: elements/count
+  filter: |
+    highway=* and type:way
+    
+all_roads_length:
+  name: All Roads
+  description: |
+    The road network defined by all objects which hold a highway-tag as defined in the OSM Wiki`:`
+    https://wiki.openstreetmap.org/wiki/Key:highway
+  endpoint: elements/length
+  filter: |
+    highway=* and type:way
